@@ -3,6 +3,9 @@
  * Prevents multiple instances in development
  */
 
+const { normalizeEnvironment } = require('./env');
+normalizeEnvironment();
+
 const { PrismaClient } = require('@prisma/client');
 
 const globalForPrisma = global;

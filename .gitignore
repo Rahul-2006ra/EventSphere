@@ -107,4 +107,4 @@ temp/
 
 # Local screenshots / accidental shell brace output
 localhost-*.png
-{frontend/
+[{]frontend/

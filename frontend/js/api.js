@@ -20,7 +20,10 @@ var API = window.API = {
     if (body) config.body = JSON.stringify(body);
 
     const res = await fetch(`${CONFIG.API_BASE_URL}${path}`, config);
-    const data = await res.json();
+    const contentType = res.headers.get('content-type') || '';
+    const data = contentType.includes('application/json')
+      ? await res.json()
+      : { success: false, message: await res.text() || `HTTP ${res.status}` };
 
     if (!res.ok) {
       throw new Error(data.message || `HTTP ${res.status}`);

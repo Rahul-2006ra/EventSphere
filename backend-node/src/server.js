@@ -4,6 +4,9 @@
  */
 
 require('dotenv').config();
+const { normalizeEnvironment } = require('./utils/env');
+normalizeEnvironment();
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -16,7 +19,12 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 const httpServer = http.createServer(app);
 const isDemoMode = process.env.DEMO_MODE === 'true' || !process.env.DATABASE_URL;
-const allowedOrigins = (process.env.CLIENT_URL || process.env.ALLOWED_ORIGINS || '')
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  process.env.ALLOWED_ORIGINS,
+]
+  .filter(Boolean)
+  .join(',')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
@@ -96,20 +104,58 @@ app.get('/health', (req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
+app.get('/health/db', async (req, res) => {
+  if (isDemoMode) {
+    return res.json({ status: 'healthy', database: 'demo-memory', timestamp: new Date().toISOString() });
+  }
+
+  try {
+    const prisma = require('./utils/prisma');
+    await prisma.$runCommandRaw({ ping: 1 });
+    return res.json({ status: 'healthy', database: 'mongodb', timestamp: new Date().toISOString() });
+  } catch (err) {
+    console.error('[Health DB]', err.message);
+    return res.status(503).json({ status: 'unhealthy', database: 'mongodb', message: 'Database connection failed' });
+  }
+});
+
 if (isDemoMode) {
-  console.warn('[EventSphere] DEMO_MODE enabled: using in-memory data instead of PostgreSQL.');
+  console.warn('[EventSphere] DEMO_MODE enabled: using in-memory data instead of MongoDB.');
   app.use(API, require('./routes/demo.routes'));
+  app.use('/', require('./routes/demo.routes'));
 } else {
-  app.use(`${API}/auth`, require('./routes/auth.routes'));
-  app.use(`${API}/events`, require('./routes/event.routes'));
-  app.use(`${API}/bookings`, require('./routes/booking.routes'));
-  app.use(`${API}/tickets`, require('./routes/ticket.routes'));
-  app.use(`${API}/users`, require('./routes/user.routes'));
-  app.use(`${API}/reviews`, require('./routes/review.routes'));
-  app.use(`${API}/notifications`, require('./routes/notification.routes'));
-  app.use(`${API}/wishlist`, require('./routes/wishlist.routes'));
-  app.use(`${API}/ai`, require('./routes/ai.routes'));
-  app.use(`${API}/dashboard`, require('./routes/dashboard.routes'));
+  const authRoutes = require('./routes/auth.routes');
+  const eventRoutes = require('./routes/event.routes');
+  const bookingRoutes = require('./routes/booking.routes');
+  const ticketRoutes = require('./routes/ticket.routes');
+  const userRoutes = require('./routes/user.routes');
+  const reviewRoutes = require('./routes/review.routes');
+  const notificationRoutes = require('./routes/notification.routes');
+  const wishlistRoutes = require('./routes/wishlist.routes');
+  const aiRoutes = require('./routes/ai.routes');
+  const dashboardRoutes = require('./routes/dashboard.routes');
+
+  app.use(`${API}/auth`, authRoutes);
+  app.use(`${API}/events`, eventRoutes);
+  app.use(`${API}/bookings`, bookingRoutes);
+  app.use(`${API}/tickets`, ticketRoutes);
+  app.use(`${API}/users`, userRoutes);
+  app.use(`${API}/reviews`, reviewRoutes);
+  app.use(`${API}/notifications`, notificationRoutes);
+  app.use(`${API}/wishlist`, wishlistRoutes);
+  app.use(`${API}/ai`, aiRoutes);
+  app.use(`${API}/dashboard`, dashboardRoutes);
+
+  app.use('/auth', authRoutes);
+  app.use('/events', eventRoutes);
+  app.use('/bookings', bookingRoutes);
+  app.use('/tickets', ticketRoutes);
+  app.use('/users', userRoutes);
+  app.use('/reviews', reviewRoutes);
+  app.use('/notifications', notificationRoutes);
+  app.use('/wishlist', wishlistRoutes);
+  app.use('/ai', aiRoutes);
+  app.use('/dashboard', dashboardRoutes);
 }
 
 app.use(express.static(frontendPath));

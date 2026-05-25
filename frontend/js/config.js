@@ -7,8 +7,20 @@ const publicEnv = window.EVENTSPHERE_ENV || {};
 const isLocal = window.location.hostname === 'localhost'
   || window.location.hostname === '127.0.0.1'
   || window.location.protocol === 'file:';
-const apiOrigin = (publicEnv.API_BASE_URL || (isLocal ? 'http://localhost:5000/api/v1' : '')).replace(/\/$/, '');
-const socketOrigin = (publicEnv.SOCKET_URL || apiOrigin.replace(/\/api\/v1$/, '') || (isLocal ? 'http://localhost:5000' : window.location.origin)).replace(/\/$/, '');
+const trimTrailingSlash = (value) => String(value || '').replace(/\/$/, '');
+const withApiPrefix = (value) => {
+  const baseUrl = trimTrailingSlash(value);
+  if (!baseUrl) return '';
+  return baseUrl.endsWith('/api/v1') ? baseUrl : `${baseUrl}/api/v1`;
+};
+
+const configuredApiUrl = publicEnv.API_BASE_URL || (isLocal ? 'http://localhost:5000/api/v1' : '');
+const apiOrigin = withApiPrefix(configuredApiUrl);
+const socketOrigin = trimTrailingSlash(
+  publicEnv.SOCKET_URL
+  || apiOrigin.replace(/\/api\/v1$/, '')
+  || (isLocal ? 'http://localhost:5000' : window.location.origin),
+);
 
 window.CONFIG = {
   API_BASE_URL: apiOrigin || '/api/v1',
