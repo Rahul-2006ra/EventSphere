@@ -1,36 +1,31 @@
 // EventSphere - Prisma Schema
-// MongoDB Atlas with Prisma relations
+// PostgreSQL database with Prisma relations
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mongodb"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// ─────────────────────────────────────────────
-// USERS
-// ─────────────────────────────────────────────
 model User {
-  id           String    @id @default(auto()) @map("_id") @db.ObjectId
-  name         String
-  email        String    @unique
-  password     String
-  role         Role      @default(ATTENDEE)
-  avatar       String?
-  phone        String?
-  bio          String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  // Relations
-  events       Event[]       @relation("OrganizerEvents")
-  bookings     Booking[]
-  reviews      Review[]
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  password      String
+  role          Role           @default(ATTENDEE)
+  avatar        String?
+  phone         String?
+  bio           String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  events        Event[]        @relation("OrganizerEvents")
+  bookings      Booking[]
+  reviews       Review[]
   notifications Notification[]
-  wishlist     Wishlist[]
+  wishlist      Wishlist[]
 
   @@map("users")
 }
@@ -41,17 +36,14 @@ enum Role {
   ADMIN
 }
 
-// ─────────────────────────────────────────────
-// EVENTS
-// ─────────────────────────────────────────────
 model Event {
-  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  id            String       @id @default(cuid())
   title         String
-  slug          String      @unique
+  slug          String       @unique
   description   String
   shortDesc     String?
   category      Category
-  status        EventStatus @default(DRAFT)
+  status        EventStatus  @default(DRAFT)
   bannerImage   String?
   venue         String
   address       String?
@@ -60,21 +52,19 @@ model Event {
   longitude     Float?
   startDate     DateTime
   endDate       DateTime
-  timezone      String      @default("Asia/Kolkata")
-  isOnline      Boolean     @default(false)
+  timezone      String       @default("Asia/Kolkata")
+  isOnline      Boolean      @default(false)
   onlineLink    String?
-  faqs          Json?       // Array of {question, answer}
-  speakers      Json?       // Array of {name, bio, avatar, title}
+  faqs          Json?
+  speakers      Json?
   tags          String[]
-  totalCapacity Int         @default(0)
-  bookedCount   Int         @default(0)
-  isFeatured    Boolean     @default(false)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-
-  // Relations
-  organizerId   String      @db.ObjectId
-  organizer     User        @relation("OrganizerEvents", fields: [organizerId], references: [id], onDelete: Cascade)
+  totalCapacity Int          @default(0)
+  bookedCount   Int          @default(0)
+  isFeatured    Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  organizerId   String
+  organizer     User         @relation("OrganizerEvents", fields: [organizerId], references: [id], onDelete: Cascade)
   ticketTypes   TicketType[]
   bookings      Booking[]
   reviews       Review[]
@@ -103,58 +93,48 @@ enum EventStatus {
   COMPLETED
 }
 
-// ─────────────────────────────────────────────
-// TICKET TYPES
-// ─────────────────────────────────────────────
 model TicketType {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String   // e.g., "General", "VIP", "Early Bird"
+  id          String    @id @default(cuid())
+  name        String
   description String?
   price       Float
   quantity    Int
-  sold        Int      @default(0)
-  maxPerOrder Int      @default(10)
+  sold        Int       @default(0)
+  maxPerOrder Int       @default(10)
   salesStart  DateTime?
   salesEnd    DateTime?
-  perks       String[] // Array of perk strings
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  eventId     String   @db.ObjectId
-  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  perks       String[]
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  eventId     String
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
   tickets     Ticket[]
 
   @@map("ticket_types")
 }
 
-// ─────────────────────────────────────────────
-// BOOKINGS
-// ─────────────────────────────────────────────
 model Booking {
-  id                String        @id @default(auto()) @map("_id") @db.ObjectId
-  bookingRef        String        @unique @default(cuid())
-  status            BookingStatus @default(PENDING)
-  totalAmount       Float
-  currency          String        @default("INR")
-  paymentId         String?       // Razorpay payment ID
-  orderId           String?       // Razorpay order ID
-  paymentSignature  String?
-  paymentMethod     String?
-  paidAt            DateTime?
-  cancelledAt       DateTime?
-  cancelReason      String?
-  attendeeDetails   Json?         // {name, email, phone}
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-
-  // Relations
-  userId            String        @db.ObjectId
-  user              User          @relation(fields: [userId], references: [id])
-  eventId           String        @db.ObjectId
-  event             Event         @relation(fields: [eventId], references: [id])
-  tickets           Ticket[]
+  id               String        @id @default(cuid())
+  bookingRef       String        @unique @default(cuid())
+  status           BookingStatus @default(PENDING)
+  totalAmount      Float
+  currency         String        @default("INR")
+  paymentId        String?
+  orderId          String?
+  paymentSignature String?
+  paymentMethod    String?
+  paidAt           DateTime?
+  cancelledAt      DateTime?
+  cancelReason     String?
+  attendeeDetails  Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  userId           String
+  user             User          @relation(fields: [userId], references: [id])
+  eventId          String
+  event            Event         @relation(fields: [eventId], references: [id])
+  tickets          Ticket[]
 
   @@map("bookings")
 }
@@ -167,14 +147,11 @@ enum BookingStatus {
   FAILED
 }
 
-// ─────────────────────────────────────────────
-// TICKETS (individual tickets per booking)
-// ─────────────────────────────────────────────
 model Ticket {
-  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  id            String       @id @default(cuid())
   ticketNumber  String       @unique
-  qrCode        String?      // Base64 QR or URL
-  qrData        String?      // Data encoded in QR
+  qrCode        String?
+  qrData        String?
   status        TicketStatus @default(ACTIVE)
   checkedInAt   DateTime?
   checkedInBy   String?
@@ -182,11 +159,9 @@ model Ticket {
   attendeeEmail String?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
-
-  // Relations
-  bookingId     String       @db.ObjectId
+  bookingId     String
   booking       Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  ticketTypeId  String       @db.ObjectId
+  ticketTypeId  String
   ticketType    TicketType   @relation(fields: [ticketTypeId], references: [id])
 
   @@map("tickets")
@@ -199,42 +174,32 @@ enum TicketStatus {
   EXPIRED
 }
 
-// ─────────────────────────────────────────────
-// REVIEWS
-// ─────────────────────────────────────────────
 model Review {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  rating    Int      // 1-5
-  title     String?
-  body      String
-  isVerified Boolean @default(false) // verified attendee
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  userId    String   @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  eventId   String   @db.ObjectId
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  rating     Int
+  title      String?
+  body       String
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId    String
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventId])
   @@map("reviews")
 }
 
-// ─────────────────────────────────────────────
-// NOTIFICATIONS
-// ─────────────────────────────────────────────
 model Notification {
-  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  id        String           @id @default(cuid())
   type      NotificationType
   title     String
   message   String
   isRead    Boolean          @default(false)
-  data      Json?            // Extra payload
+  data      Json?
   createdAt DateTime         @default(now())
-
-  // Relations
-  userId    String           @db.ObjectId
+  userId    String
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
@@ -252,17 +217,12 @@ enum NotificationType {
   GENERAL
 }
 
-// ─────────────────────────────────────────────
-// WISHLIST
-// ─────────────────────────────────────────────
 model Wishlist {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String   @id @default(cuid())
   createdAt DateTime @default(now())
-
-  // Relations
-  userId    String   @db.ObjectId
+  userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  eventId   String   @db.ObjectId
+  eventId   String
   event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventId])

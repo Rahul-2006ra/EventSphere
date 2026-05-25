@@ -5,18 +5,16 @@ This project deploys as three managed services:
 - Frontend: Vercel, serving the static `frontend` folder.
 - API: Render web service from `backend-node`.
 - AI service: Render web service from `ai-flask`.
-- Database: MongoDB Atlas, connected through Prisma.
+- Database: PostgreSQL, connected through Prisma.
 
-## 1. MongoDB Atlas
+## 1. PostgreSQL
 
-1. Create a free Atlas cluster.
-2. Create a database user and password.
-3. Add Render outbound access. For a hackathon demo, Atlas Network Access can temporarily allow `0.0.0.0/0`; restrict it after judging.
-4. Copy the connection string and set the database name to `eventsphere`.
-5. Use this as `DATABASE_URL` in the Render API service:
+Create a PostgreSQL database. The easiest Render setup is a Render PostgreSQL instance in the same account as the API service.
+
+Use the database's external or internal connection string as `DATABASE_URL` in the Render API service:
 
 ```env
-DATABASE_URL=mongodb+srv://USER:PASSWORD@CLUSTER.mongodb.net/eventsphere?retryWrites=true&w=majority
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/eventsphere?sslmode=require
 ```
 
 ## 2. Render
@@ -27,7 +25,7 @@ API service:
 
 ```text
 Root Directory: backend-node
-Build Command: npm ci && npm run build
+Build Command: npm ci && npm run db:push && npm run build
 Start Command: npm start
 Health Check Path: /health
 ```
@@ -65,10 +63,11 @@ Deploy. The build writes `frontend/js/env.js`, so the static frontend calls the 
 
 ## 4. Database Setup
 
-After the API service has `DATABASE_URL`, run this once from Render Shell or locally with the Atlas URL:
+The Render build command runs `npm run db:push`, so Prisma creates/updates the PostgreSQL schema during deployment.
+
+To seed demo accounts and sample events, run this once from Render Shell after the first successful deploy:
 
 ```bash
-npx prisma db push
 npm run db:seed
 ```
 

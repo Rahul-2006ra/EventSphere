@@ -110,9 +110,9 @@ app.get(`${API}/health`, (req, res) => {
 
 const getDatabaseFailureReason = (err) => {
   const message = String(err?.message || '').toLowerCase();
-  if (message.includes('authentication failed') || message.includes('scram failure')) return 'authentication';
+  if (message.includes('authentication failed') || message.includes('scram failure') || message.includes('password authentication failed')) return 'authentication';
   if (message.includes('invalid peer certificate') || message.includes('certificate')) return 'tls';
-  if (message.includes('server selection timeout')) return 'network-timeout';
+  if (message.includes('server selection timeout') || message.includes('connection timed out') || message.includes('connect timeout')) return 'network-timeout';
   if (message.includes('query raw failed') || message.includes('raw query failed')) return 'query-failed';
   return 'unknown';
 };
@@ -124,13 +124,13 @@ const dbHealthHandler = async (req, res) => {
 
   try {
     const prisma = require('./utils/prisma');
-    await prisma.$runCommandRaw({ ping: 1 });
-    return res.json({ status: 'healthy', database: 'mongodb', timestamp: new Date().toISOString() });
+    await prisma.$queryRaw`SELECT 1`;
+    return res.json({ status: 'healthy', database: 'postgresql', timestamp: new Date().toISOString() });
   } catch (err) {
     console.error('[Health DB]', err.message);
     return res.status(503).json({
       status: 'unhealthy',
-      database: 'mongodb',
+      database: 'postgresql',
       message: 'Database connection failed',
       reason: getDatabaseFailureReason(err),
     });
@@ -141,7 +141,7 @@ app.get('/health/db', dbHealthHandler);
 app.get(`${API}/health/db`, dbHealthHandler);
 
 if (isDemoMode) {
-  console.warn('[EventSphere] DEMO_MODE enabled: using in-memory data instead of MongoDB.');
+  console.warn('[EventSphere] DEMO_MODE enabled: using in-memory data instead of PostgreSQL.');
   app.use(API, require('./routes/demo.routes'));
   app.use('/', require('./routes/demo.routes'));
 } else {
@@ -191,6 +191,9 @@ app.use((err, req, res, next) => {
     err.message.includes('Server selection timeout')
     || err.message.includes('SCRAM failure')
     || err.message.includes('authentication failed')
+    || err.message.includes('password authentication failed')
+    || err.message.includes('connect ECONNREFUSED')
+    || err.message.includes('Can\'t reach database server')
     || err.message.includes('Raw query failed')
   );
 
