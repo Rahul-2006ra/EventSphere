@@ -108,6 +108,15 @@ app.get(`${API}/health`, (req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
+const getDatabaseFailureReason = (err) => {
+  const message = String(err?.message || '').toLowerCase();
+  if (message.includes('authentication failed') || message.includes('scram failure')) return 'authentication';
+  if (message.includes('invalid peer certificate') || message.includes('certificate')) return 'tls';
+  if (message.includes('server selection timeout')) return 'network-timeout';
+  if (message.includes('query raw failed') || message.includes('raw query failed')) return 'query-failed';
+  return 'unknown';
+};
+
 const dbHealthHandler = async (req, res) => {
   if (isDemoMode) {
     return res.json({ status: 'healthy', database: 'demo-memory', timestamp: new Date().toISOString() });
@@ -119,7 +128,12 @@ const dbHealthHandler = async (req, res) => {
     return res.json({ status: 'healthy', database: 'mongodb', timestamp: new Date().toISOString() });
   } catch (err) {
     console.error('[Health DB]', err.message);
-    return res.status(503).json({ status: 'unhealthy', database: 'mongodb', message: 'Database connection failed' });
+    return res.status(503).json({
+      status: 'unhealthy',
+      database: 'mongodb',
+      message: 'Database connection failed',
+      reason: getDatabaseFailureReason(err),
+    });
   }
 };
 
