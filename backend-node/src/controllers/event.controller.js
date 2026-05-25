@@ -349,7 +349,7 @@ const getMyEvents = async (req, res, next) => {
         orderBy: { createdAt: 'desc' },
         include: {
           ticketTypes: true,
-          _count: { select: { bookings: true, tickets: false } },
+          _count: { select: { bookings: true } },
         },
       }),
       prisma.event.count({ where }),
