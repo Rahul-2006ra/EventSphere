@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventSphere - Discover, Create, and Book Events</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body class="home-page">
+  <nav id="navbar" class="home-nav">
+    <a href="/" class="brand-lockup" aria-label="EventSphere home">
+      <span class="brand-mark">ES</span>
+      <span class="brand-text">EventSphere</span>
+    </a>
+
+    <div class="home-nav-links" aria-label="Primary navigation">
+      <a href="#events">Events</a>
+      <a href="/pages/create-event.html">Create</a>
+      <a href="/pages/dashboard.html">Dashboard</a>
+      <a href="/pages/my-bookings.html">Tickets</a>
+    </div>
+
+    <div id="nav-auth" class="home-nav-actions">
+      <a href="/pages/login.html" class="text-link">Sign In</a>
+      <a href="/pages/register.html" class="btn-primary">Get Started</a>
+    </div>
+
+    <button id="mobile-menu-btn" class="home-menu-button" aria-label="Open menu">Menu</button>
+  </nav>
+
+  <div id="mobile-menu" class="home-mobile-menu hidden">
+    <a href="#events">Events</a>
+    <a href="/pages/create-event.html">Create Event</a>
+    <a href="/pages/dashboard.html">Dashboard</a>
+    <a href="/pages/login.html">Sign In</a>
+  </div>
+
+  <header class="home-hero">
+    <div class="hero-media" aria-hidden="true">
+      <div class="hero-photo hero-photo-main">
+        <span>AI Summit</span>
+      </div>
+      <div class="hero-photo hero-photo-top">
+        <span>Workshops</span>
+      </div>
+      <div class="hero-photo hero-photo-bottom">
+        <span>Live Check-in</span>
+      </div>
+    </div>
+
+    <section class="hero-copy" aria-labelledby="hero-title">
+      <p class="eyebrow">National hackathon demo ready</p>
+      <h1 id="hero-title">Run unforgettable events from one beautiful dashboard.</h1>
+      <p class="hero-subtitle">
+        Discover events, book tickets, generate AI event content, issue QR passes, and manage organizer analytics in real time.
+      </p>
+
+      <div class="hero-actions">
+        <a href="#events" class="btn-primary btn-large">Explore Events</a>
+        <a href="/pages/create-event.html" class="btn-secondary btn-large">Create Event</a>
+      </div>
+
+      <div class="hero-metrics" aria-label="Platform metrics">
+        <div>
+          <strong id="stat-events">3</strong>
+          <span>Live events</span>
+        </div>
+        <div>
+          <strong>QR</strong>
+          <span>Ticket check-in</span>
+        </div>
+        <div>
+          <strong>AI</strong>
+          <span>Grok-ready tools</span>
+        </div>
+      </div>
+    </section>
+  </header>
+
+  <main id="events" class="home-main">
+    <section class="control-panel" aria-label="Find events">
+      <div class="search-card">
+        <label for="search-input">Search events</label>
+        <div class="search-row">
+          <input id="search-input" type="search" placeholder="Search by title, city, tag, or category" />
+          <select id="category-select" aria-label="Category">
+            <option value="">All categories</option>
+            <option value="CONFERENCE">Conference</option>
+            <option value="WORKSHOP">Workshop</option>
+            <option value="NETWORKING">Networking</option>
+            <option value="FESTIVAL">Festival</option>
+            <option value="CONCERT">Concert</option>
+            <option value="SEMINAR">Seminar</option>
+            <option value="SPORTS">Sports</option>
+          </select>
+          <button onclick="searchEvents()" class="btn-primary">Search</button>
+        </div>
+      </div>
+
+      <div class="quick-filters" aria-label="Quick category filters">
+        <button onclick="filterCategory('')" class="filter-chip active" data-cat="">All</button>
+        <button onclick="filterCategory('CONFERENCE')" class="filter-chip" data-cat="CONFERENCE">Conference</button>
+        <button onclick="filterCategory('WORKSHOP')" class="filter-chip" data-cat="WORKSHOP">Workshop</button>
+        <button onclick="filterCategory('NETWORKING')" class="filter-chip" data-cat="NETWORKING">Networking</button>
+        <button onclick="filterCategory('FESTIVAL')" class="filter-chip" data-cat="FESTIVAL">Festival</button>
+        <button onclick="filterCategory('CONCERT')" class="filter-chip" data-cat="CONCERT">Concert</button>
+      </div>
+    </section>
+
+    <section class="events-section" aria-labelledby="events-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Upcoming</p>
+          <h2 id="events-title">Events people can book today</h2>
+          <p id="events-count">Loading events...</p>
+        </div>
+        <select id="sort-select" onchange="loadEvents()" aria-label="Sort events">
+          <option value="startDate">Date: Soonest</option>
+          <option value="createdAt">Newest</option>
+          <option value="bookedCount">Most Popular</option>
+        </select>
+      </div>
+
+      <div id="events-skeleton" class="event-grid">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+      </div>
+
+      <div id="events-grid" class="event-grid hidden"></div>
+
+      <div id="events-empty" class="empty-state hidden">
+        <strong>No matching events found</strong>
+        <p>Try another keyword or clear the category filter.</p>
+      </div>
+
+      <div id="pagination" class="pagination hidden">
+        <button id="prev-btn" onclick="changePage(-1)" class="btn-secondary">Previous</button>
+        <span id="page-info"></span>
+        <button id="next-btn" onclick="changePage(1)" class="btn-secondary">Next</button>
+      </div>
+    </section>
+
+    <section class="feature-strip" aria-label="EventSphere features">
+      <article>
+        <span>01</span>
+        <h3>AI event creation</h3>
+        <p>Generate strong descriptions and schedules for organizers.</p>
+      </article>
+      <article>
+        <span>02</span>
+        <h3>QR ticketing</h3>
+        <p>Book tickets and show QR passes from My Bookings.</p>
+      </article>
+      <article>
+        <span>03</span>
+        <h3>Organizer analytics</h3>
+        <p>Track bookings, revenue, check-ins, and event performance.</p>
+      </article>
+    </section>
+  </main>
+
+  <footer class="home-footer">
+    <span>EventSphere</span>
+    <p>Built for a fast, polished hackathon presentation.</p>
+  </footer>
+
+  <script src="js/env.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

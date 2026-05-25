@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Check-In Scanner — EventSphere</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { fontFamily: { display: ['Syne', 'sans-serif'], body: ['DM Sans', 'sans-serif'] }, colors: { primary: { DEFAULT: '#6366f1', dark: '#4f46e5', light: '#818cf8' }, surface: { DEFAULT: '#0f0f1a', card: '#161625', border: '#1e1e35' } } } }
+    };
+  </script>
+</head>
+<body class="bg-surface text-white font-body antialiased min-h-screen">
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-surface-card border-b border-surface-border">
+    <div class="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div>
+        <div class="font-display font-bold">Check-In Scanner</div>
+        <div class="text-xs text-slate-400">EventSphere</div>
+      </div>
+      <span class="live-dot">Live</span>
+    </div>
+  </nav>
+
+  <main class="max-w-2xl mx-auto px-4 pt-24 pb-20 space-y-6">
+
+    <!-- Manual ticket number entry -->
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+      <h2 class="font-display font-semibold text-lg">Verify Ticket</h2>
+      <p class="text-slate-400 text-sm">Enter the ticket number or scan QR code to check in an attendee.</p>
+
+      <div class="flex gap-3">
+        <input id="ticket-input" type="text" class="form-input flex-1" placeholder="EVS-XXXXXXXXX-XXXXXX" />
+        <button onclick="verifyTicket()" class="btn-primary px-5">Verify</button>
+      </div>
+
+      <!-- Result display -->
+      <div id="verify-result" class="hidden mt-4 p-4 rounded-xl border"></div>
+    </div>
+
+    <!-- Socket-based check-in -->
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+      <h2 class="font-display font-semibold text-lg">QR Scanner Check-In</h2>
+      <p class="text-slate-400 text-sm">After scanning a QR code, paste the decoded JSON data below to check in via Socket.IO.</p>
+
+      <textarea id="qr-data-input" class="form-input h-24 resize-none font-mono text-xs" placeholder='{"ticketNumber":"EVS-...","eventId":"...","bookingId":"..."}'></textarea>
+
+      <div>
+        <label class="form-label">Event ID (for this check-in session)</label>
+        <input id="event-id-input" type="text" class="form-input" placeholder="Event ID" />
+      </div>
+
+      <button onclick="socketCheckin()" class="btn-primary w-full">✓ Check In via Socket</button>
+
+      <!-- Socket result -->
+      <div id="socket-result" class="hidden p-4 rounded-xl border"></div>
+    </div>
+
+    <!-- Recent Check-ins Feed -->
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-display font-semibold text-lg">Recent Check-Ins</h2>
+        <button onclick="clearFeed()" class="text-xs text-slate-400 hover:text-white">Clear</button>
+      </div>
+      <div id="checkin-feed" class="space-y-2 max-h-96 overflow-y-auto">
+        <p class="text-slate-400 text-sm" id="feed-placeholder">No check-ins yet in this session</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="../js/env.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    let socket = null;
+    let sessionEventId = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!Auth.requireOrganizer()) return;
+      initSocket();
+    });
+
+    function initSocket() {
+      socket = io(CONFIG.SOCKET_URL);
+
+      socket.on('connect', () => {
+        Toast.success('Connected to real-time server');
+      });
+
+      socket.on('checkin:result', (data) => {
+        const el = document.getElementById('socket-result');
+        el.classList.remove('hidden');
+
+        if (data.success) {
+          el.className = 'p-4 rounded-xl border border-green-500/30 bg-green-500/5';
+          el.innerHTML = `
+            <div class="flex items-center gap-2 text-green-400 font-medium mb-2">✓ Check-In Successful!</div>
+            <div class="text-sm space-y-1 text-slate-300">
+              <div><span class="text-slate-500">Name:</span> ${data.ticket?.attendeeName || '—'}</div>
+              <div><span class="text-slate-500">Event:</span> ${data.ticket?.eventName || '—'}</div>
+              <div><span class="text-slate-500">Ticket:</span> ${data.ticket?.ticketNumber || '—'}</div>
+              <div><span class="text-slate-500">Type:</span> ${data.ticket?.ticketType || '—'}</div>
+            </div>
+          `;
+          addFeedItem(data.ticket, true);
+        } else {
+          el.className = 'p-4 rounded-xl border border-red-500/30 bg-red-500/5';
+          el.innerHTML = `
+            <div class="flex items-center gap-2 text-red-400 font-medium">✕ ${data.message}</div>
+            ${data.ticket ? `<div class="text-xs text-slate-400 mt-2">Ticket: ${data.ticket.ticketNumber}</div>` : ''}
+          `;
+        }
+      });
+
+      socket.on('event:checkin', (data) => {
+        // Notification from other check-in events
+      });
+    }
+
+    async function verifyTicket() {
+      const ticketNumber = document.getElementById('ticket-input').value.trim();
+      if (!ticketNumber) { Toast.error('Enter a ticket number'); return; }
+
+      const el = document.getElementById('verify-result');
+      el.classList.remove('hidden');
+      el.className = 'p-4 rounded-xl border border-surface-border';
+      el.innerHTML = '<div class="text-slate-400 text-sm">Verifying...</div>';
+
+      try {
+        const res = await API.tickets.verify(ticketNumber);
+        const t = res.data;
+
+        const isActive = t.status === 'ACTIVE';
+        el.className = `p-4 rounded-xl border ${isActive ? 'border-green-500/30 bg-green-500/5' : 'border-red-500/30 bg-red-500/5'}`;
+        el.innerHTML = `
+          <div class="flex items-center gap-2 font-medium mb-3 ${isActive ? 'text-green-400' : 'text-red-400'}">
+            ${isActive ? '✓ Valid Ticket' : '✕ ' + (t.status === 'USED' ? 'Already Used' : 'Invalid')}
+          </div>
+          <div class="text-sm space-y-1 text-slate-300">
+            <div><span class="text-slate-500">Name:</span> ${t.attendeeName || '—'}</div>
+            <div><span class="text-slate-500">Event:</span> ${t.event || '—'}</div>
+            <div><span class="text-slate-500">Type:</span> ${t.ticketType || '—'}</div>
+            <div><span class="text-slate-500">Status:</span> ${t.status}</div>
+            ${t.checkedInAt ? `<div><span class="text-slate-500">Checked in at:</span> ${formatDateTime(t.checkedInAt)}</div>` : ''}
+          </div>
+        `;
+      } catch (err) {
+        el.className = 'p-4 rounded-xl border border-red-500/30 bg-red-500/5';
+        el.innerHTML = `<div class="text-red-400">Ticket not found</div>`;
+      }
+    }
+
+    function socketCheckin() {
+      const qrDataRaw = document.getElementById('qr-data-input').value.trim();
+      const eventId = document.getElementById('event-id-input').value.trim();
+
+      if (!qrDataRaw) { Toast.error('Paste QR data first'); return; }
+      if (!eventId) { Toast.error('Enter Event ID'); return; }
+
+      let qrData;
+      try {
+        qrData = JSON.parse(qrDataRaw);
+      } catch {
+        Toast.error('Invalid QR data format (must be JSON)');
+        return;
+      }
+
+      if (!socket?.connected) {
+        Toast.error('Not connected to server');
+        return;
+      }
+
+      socket.emit('checkin:scan', {
+        ticketNumber: qrData.ticketNumber,
+        eventId,
+        scannedBy: Auth.getUser()?.id,
+      });
+    }
+
+    function addFeedItem(ticket, success) {
+      const feed = document.getElementById('checkin-feed');
+      const placeholder = document.getElementById('feed-placeholder');
+      if (placeholder) placeholder.remove();
+
+      const item = document.createElement('div');
+      item.className = `flex items-center gap-3 p-3 rounded-xl border text-sm ${success ? 'border-green-500/20 bg-green-500/5' : 'border-red-500/20 bg-red-500/5'}`;
+      item.innerHTML = `
+        <span class="${success ? 'text-green-400' : 'text-red-400'} text-lg">${success ? '✓' : '✕'}</span>
+        <div class="flex-1">
+          <div class="font-medium">${ticket?.attendeeName || 'Unknown'}</div>
+          <div class="text-xs text-slate-400">${ticket?.ticketNumber || '—'} · ${ticket?.ticketType || '—'}</div>
+        </div>
+        <span class="text-xs text-slate-500">${new Date().toLocaleTimeString()}</span>
+      `;
+      feed.prepend(item);
+    }
+
+    function clearFeed() {
+      const feed = document.getElementById('checkin-feed');
+      feed.innerHTML = '<p class="text-slate-400 text-sm" id="feed-placeholder">No check-ins yet in this session</p>';
+    }
+
+    document.getElementById('ticket-input')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') verifyTicket();
+    });
+  </script>
+</body>
+</html>

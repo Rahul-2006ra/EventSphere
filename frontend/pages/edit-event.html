@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Edit Event — EventSphere</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <script>
+    tailwind.config = {
+      darkMode:'class',
+      theme:{ extend:{
+        fontFamily:{ display:['Syne','sans-serif'], body:['DM Sans','sans-serif'] },
+        colors:{ primary:{ DEFAULT:'#6366f1', dark:'#4f46e5', light:'#818cf8' }, accent:{ DEFAULT:'#f59e0b' }, surface:{ DEFAULT:'#0f0f1a', card:'#161625', border:'#1e1e35' } }
+      }}
+    };
+  </script>
+</head>
+<body class="bg-surface text-white font-body antialiased">
+
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-surface-card border-b border-surface-border">
+    <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </div>
+        <span class="font-display font-bold text-lg">EventSphere</span>
+      </a>
+      <a href="/pages/my-events.html" class="btn-secondary text-sm">← My Events</a>
+    </div>
+  </nav>
+
+  <main class="max-w-4xl mx-auto px-4 pt-24 pb-20">
+    <div class="mb-6">
+      <h1 class="font-display text-2xl font-bold">Edit Event</h1>
+      <p id="event-title-sub" class="text-slate-400 text-sm mt-1">Loading...</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div class="lg:col-span-2 space-y-6">
+
+        <!-- Basic Info -->
+        <div class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+          <h2 class="font-display font-semibold">Basic Information</h2>
+          <div>
+            <label class="form-label">Event Title</label>
+            <input id="title" type="text" class="form-input"/>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">Category</label>
+              <select id="category" class="form-input">
+                <option value="CONFERENCE">Conference</option>
+                <option value="CONCERT">Concert</option>
+                <option value="WORKSHOP">Workshop</option>
+                <option value="SEMINAR">Seminar</option>
+                <option value="MEETUP">Meetup</option>
+                <option value="FESTIVAL">Festival</option>
+                <option value="SPORTS">Sports</option>
+                <option value="NETWORKING">Networking</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">City</label>
+              <input id="city" type="text" class="form-input"/>
+            </div>
+          </div>
+          <div>
+            <label class="form-label">Description</label>
+            <textarea id="description" class="form-input h-40 resize-none"></textarea>
+          </div>
+          <div>
+            <label class="form-label">Short Description</label>
+            <input id="short-desc" type="text" class="form-input" maxlength="150"/>
+          </div>
+          <div>
+            <label class="form-label">Banner Image URL</label>
+            <input id="banner-image" type="url" class="form-input"/>
+          </div>
+          <div>
+            <label class="form-label">Tags (comma separated)</label>
+            <input id="tags" type="text" class="form-input"/>
+          </div>
+        </div>
+
+        <!-- Date & Venue -->
+        <div class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+          <h2 class="font-display font-semibold">Date & Venue</h2>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">Start Date & Time</label>
+              <input id="start-date" type="datetime-local" class="form-input"/>
+            </div>
+            <div>
+              <label class="form-label">End Date & Time</label>
+              <input id="end-date" type="datetime-local" class="form-input"/>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <input id="is-online" type="checkbox" class="w-4 h-4 accent-primary"/>
+            <label for="is-online" class="text-sm text-slate-300">Online event</label>
+          </div>
+          <div>
+            <label class="form-label">Venue</label>
+            <input id="venue" type="text" class="form-input"/>
+          </div>
+          <div>
+            <label class="form-label">Address</label>
+            <input id="address" type="text" class="form-input"/>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Sidebar -->
+      <div class="space-y-4">
+        <div class="sticky top-24 space-y-4">
+          <div class="bg-surface-card border border-surface-border rounded-2xl p-5 space-y-3">
+            <h3 class="font-display font-semibold">Status</h3>
+            <select id="status" class="form-input">
+              <option value="DRAFT">Draft</option>
+              <option value="PUBLISHED">Published</option>
+              <option value="CANCELLED">Cancelled</option>
+              <option value="COMPLETED">Completed</option>
+            </select>
+            <div class="flex items-center gap-3">
+              <input id="is-featured" type="checkbox" class="w-4 h-4 accent-primary"/>
+              <label for="is-featured" class="text-sm text-slate-300">Featured event</label>
+            </div>
+          </div>
+          <button onclick="saveChanges()" class="btn-primary w-full">Save Changes</button>
+          <a id="view-link" href="#" class="btn-secondary w-full text-center text-sm">View Event Page</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="../js/env.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    let eventId = null;
+
+    // Helper: convert ISO to datetime-local format
+    function toLocalInput(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 16);
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!Auth.requireOrganizer()) return;
+
+      const params = new URLSearchParams(window.location.search);
+      eventId = params.get('id');
+      if (!eventId) { Toast.error('No event ID'); return; }
+
+      try {
+        const res = await API.events.get(eventId);
+        const e = res.data;
+
+        document.title = `Edit: ${e.title} — EventSphere`;
+        document.getElementById('event-title-sub').textContent = e.title;
+        document.getElementById('view-link').href = `/pages/event-detail.html?id=${eventId}`;
+
+        // Pre-fill fields
+        document.getElementById('title').value = e.title || '';
+        document.getElementById('category').value = e.category || 'CONFERENCE';
+        document.getElementById('city').value = e.city || '';
+        document.getElementById('description').value = e.description || '';
+        document.getElementById('short-desc').value = e.shortDesc || '';
+        document.getElementById('banner-image').value = e.bannerImage || '';
+        document.getElementById('tags').value = (e.tags || []).join(', ');
+        document.getElementById('start-date').value = toLocalInput(e.startDate);
+        document.getElementById('end-date').value = toLocalInput(e.endDate);
+        document.getElementById('is-online').checked = e.isOnline;
+        document.getElementById('venue').value = e.venue || '';
+        document.getElementById('address').value = e.address || '';
+        document.getElementById('status').value = e.status;
+        document.getElementById('is-featured').checked = e.isFeatured;
+      } catch (err) {
+        Toast.error('Failed to load event');
+      }
+    });
+
+    async function saveChanges() {
+      const payload = {
+        title: document.getElementById('title').value.trim(),
+        category: document.getElementById('category').value,
+        city: document.getElementById('city').value.trim(),
+        description: document.getElementById('description').value.trim(),
+        shortDesc: document.getElementById('short-desc').value.trim(),
+        bannerImage: document.getElementById('banner-image').value.trim() || null,
+        tags: document.getElementById('tags').value.split(',').map(t => t.trim()).filter(Boolean),
+        startDate: document.getElementById('start-date').value,
+        endDate: document.getElementById('end-date').value,
+        isOnline: document.getElementById('is-online').checked,
+        venue: document.getElementById('venue').value.trim(),
+        address: document.getElementById('address').value.trim(),
+        status: document.getElementById('status').value,
+        isFeatured: document.getElementById('is-featured').checked,
+      };
+
+      try {
+        await API.events.update(eventId, payload);
+        Toast.success('Event updated successfully!');
+      } catch (err) {
+        Toast.error(err.message || 'Failed to save changes');
+      }
+    }
+  </script>
+</body>
+</html>

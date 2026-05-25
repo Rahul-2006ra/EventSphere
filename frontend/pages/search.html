@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Search Events — EventSphere</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <script>
+    tailwind.config = {
+      darkMode:'class',
+      theme:{ extend:{
+        fontFamily:{ display:['Syne','sans-serif'], body:['DM Sans','sans-serif'] },
+        colors:{ primary:{ DEFAULT:'#6366f1', dark:'#4f46e5', light:'#818cf8' }, surface:{ DEFAULT:'#0f0f1a', card:'#161625', border:'#1e1e35' } }
+      }}
+    };
+  </script>
+</head>
+<body class="bg-surface text-white font-body antialiased min-h-screen">
+
+  <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <a href="/" class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </div>
+          <span class="font-display font-bold text-xl">EventSphere</span>
+        </a>
+        <div id="nav-auth" class="flex items-center gap-3"></div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20">
+
+    <!-- Search bar -->
+    <div class="mb-8">
+      <div class="flex gap-3 max-w-2xl">
+        <div class="flex-1 flex items-center bg-surface-card border border-surface-border rounded-xl px-4 gap-3">
+          <svg class="w-5 h-5 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input id="search-input" type="text" class="flex-1 bg-transparent py-3 text-sm text-white placeholder-slate-500 outline-none" placeholder="Search events..." />
+        </div>
+        <button onclick="doSearch()" class="btn-primary">Search</button>
+      </div>
+
+      <!-- Active filters -->
+      <div class="flex flex-wrap gap-2 mt-3" id="active-filters"></div>
+    </div>
+
+    <!-- Filters sidebar + results -->
+    <div class="flex gap-8">
+
+      <!-- Sidebar filters -->
+      <aside class="w-56 flex-shrink-0 hidden lg:block space-y-6">
+        <div>
+          <h3 class="font-display font-semibold text-sm mb-3 text-slate-300">Category</h3>
+          <div class="space-y-1.5">
+            ${['CONFERENCE','CONCERT','WORKSHOP','SEMINAR','MEETUP','FESTIVAL','SPORTS','NETWORKING'].map(cat => `
+            <label class="flex items-center gap-2 cursor-pointer group">
+              <input type="checkbox" name="category" value="${cat}" onchange="applyFilters()" class="w-4 h-4 accent-primary rounded" />
+              <span class="text-sm text-slate-400 group-hover:text-white transition-colors">${CATEGORY_EMOJI?.[cat]||'📌'} ${cat}</span>
+            </label>`).join('')}
+          </div>
+        </div>
+
+        <div>
+          <h3 class="font-display font-semibold text-sm mb-3 text-slate-300">Price Range</h3>
+          <div class="space-y-2">
+            <input id="min-price" type="number" class="form-input text-sm py-2" placeholder="Min ₹" oninput="applyFilters()" />
+            <input id="max-price" type="number" class="form-input text-sm py-2" placeholder="Max ₹" oninput="applyFilters()" />
+          </div>
+        </div>
+
+        <div>
+          <h3 class="font-display font-semibold text-sm mb-3 text-slate-300">Date</h3>
+          <input id="start-date-filter" type="date" class="form-input text-sm py-2" onchange="applyFilters()" />
+        </div>
+
+        <button onclick="clearFilters()" class="text-xs text-slate-400 hover:text-white transition-colors">
+          Clear all filters ×
+        </button>
+      </aside>
+
+      <!-- Results -->
+      <div class="flex-1">
+        <div class="flex items-center justify-between mb-5">
+          <p id="result-count" class="text-sm text-slate-400">Searching...</p>
+          <select id="sort-select" onchange="applyFilters()" class="bg-surface-card border border-surface-border text-sm text-slate-300 rounded-lg px-3 py-1.5 outline-none">
+            <option value="startDate">Date: Soonest</option>
+            <option value="createdAt">Newest First</option>
+            <option value="bookedCount">Most Popular</option>
+          </select>
+        </div>
+
+        <div id="results-skeleton" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div class="skeleton-card h-64 rounded-2xl"></div>
+          <div class="skeleton-card h-64 rounded-2xl"></div>
+          <div class="skeleton-card h-64 rounded-2xl"></div>
+        </div>
+
+        <div id="results-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 hidden"></div>
+
+        <div id="results-empty" class="hidden text-center py-20">
+          <div class="text-5xl mb-4">🔍</div>
+          <h3 class="font-display text-xl font-semibold mb-2">No results found</h3>
+          <p class="text-slate-400">Try broader search terms or different filters</p>
+        </div>
+
+        <!-- Pagination -->
+        <div id="pagination" class="hidden flex justify-center gap-3 mt-10">
+          <button id="prev-btn" onclick="changePage(-1)" class="btn-secondary text-sm">← Prev</button>
+          <span id="page-info" class="text-slate-400 text-sm self-center"></span>
+          <button id="next-btn" onclick="changePage(1)" class="btn-secondary text-sm">Next →</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="../js/env.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    // Inline CATEGORY_EMOJI for this page
+    window.CATEGORY_EMOJI = window.CATEGORY_EMOJI || {
+      CONFERENCE:'🎤', CONCERT:'🎵', WORKSHOP:'🛠', SEMINAR:'📚',
+      MEETUP:'🤝', FESTIVAL:'🎉', SPORTS:'⚽', NETWORKING:'🌐', OTHER:'📌',
+    };
+
+    let currentPage = 1;
+    let totalPages = 1;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Pre-fill from URL params
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('q');
+      if (q) document.getElementById('search-input').value = q;
+      applyFilters();
+
+      document.getElementById('search-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') doSearch();
+      });
+    });
+
+    function doSearch() {
+      currentPage = 1;
+      applyFilters();
+    }
+
+    async function applyFilters() {
+      const search = document.getElementById('search-input').value.trim();
+      const categories = [...document.querySelectorAll('[name="category"]:checked')].map(c => c.value);
+      const minPrice = document.getElementById('min-price')?.value;
+      const maxPrice = document.getElementById('max-price')?.value;
+      const startDate = document.getElementById('start-date-filter')?.value;
+      const sort = document.getElementById('sort-select').value;
+
+      showSkeleton();
+
+      try {
+        const params = {
+          page: currentPage, limit: 9, status: 'PUBLISHED',
+          sort, order: sort === 'startDate' ? 'asc' : 'desc',
+        };
+        if (search) params.search = search;
+        if (categories.length === 1) params.category = categories[0];
+        if (minPrice) params.minPrice = minPrice;
+        if (maxPrice) params.maxPrice = maxPrice;
+        if (startDate) params.startDate = startDate;
+
+        const res = await API.events.list(params);
+        const { events, pagination } = res.data;
+
+        totalPages = pagination.pages;
+        hideSkeleton();
+
+        document.getElementById('result-count').textContent =
+          `${pagination.total} event${pagination.total !== 1 ? 's' : ''} found`;
+
+        if (!events.length) { showEmpty(); return; }
+
+        document.getElementById('results-grid').classList.remove('hidden');
+        document.getElementById('results-empty').classList.add('hidden');
+        document.getElementById('results-grid').innerHTML = events.map(eventCard).join('');
+        updatePagination(pagination);
+      } catch (err) {
+        hideSkeleton();
+        Toast.error('Search failed');
+      }
+    }
+
+    function eventCard(event) {
+      const lowestPrice = event.ticketTypes?.length
+        ? Math.min(...event.ticketTypes.map(t => t.price)) : null;
+      const emoji = CATEGORY_EMOJI[event.category] || '📌';
+      return `
+      <a href="/pages/event-detail.html?id=${event.id}" class="event-card group">
+        ${event.bannerImage
+          ? `<img src="${event.bannerImage}" class="card-img group-hover:scale-105 transition-transform duration-500" loading="lazy"/>`
+          : `<div class="card-img-placeholder">${emoji}</div>`}
+        <div class="card-body">
+          <span class="card-badge badge-${event.category}">${emoji} ${event.category}</span>
+          <h3 class="card-title">${event.title}</h3>
+          <div class="card-meta">${formatDate(event.startDate)}</div>
+          <div class="card-meta">${event.isOnline ? '🌐 Online' : (event.city || event.venue)}</div>
+          <div class="card-footer">
+            <span class="card-price">${lowestPrice !== null ? formatINR(lowestPrice) : 'TBA'}</span>
+            <span class="text-xs text-slate-500">${event.bookedCount} attending</span>
+          </div>
+        </div>
+      </a>`;
+    }
+
+    function clearFilters() {
+      document.querySelectorAll('[name="category"]').forEach(c => c.checked = false);
+      document.getElementById('min-price').value = '';
+      document.getElementById('max-price').value = '';
+      document.getElementById('start-date-filter').value = '';
+      currentPage = 1;
+      applyFilters();
+    }
+
+    function changePage(delta) {
+      const next = currentPage + delta;
+      if (next < 1 || next > totalPages) return;
+      currentPage = next;
+      applyFilters();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function updatePagination(p) {
+      const container = document.getElementById('pagination');
+      if (p.pages <= 1) { container.classList.add('hidden'); return; }
+      container.classList.remove('hidden');
+      document.getElementById('page-info').textContent = `Page ${p.page} of ${p.pages}`;
+      document.getElementById('prev-btn').disabled = p.page <= 1;
+      document.getElementById('next-btn').disabled = p.page >= p.pages;
+    }
+
+    function showSkeleton() {
+      document.getElementById('results-skeleton').classList.remove('hidden');
+      document.getElementById('results-grid').classList.add('hidden');
+      document.getElementById('results-empty').classList.add('hidden');
+    }
+    function hideSkeleton() { document.getElementById('results-skeleton').classList.add('hidden'); }
+    function showEmpty() {
+      document.getElementById('results-empty').classList.remove('hidden');
+      document.getElementById('results-grid').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

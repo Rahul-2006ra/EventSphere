@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Events — EventSphere</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { fontFamily: { display: ['Syne', 'sans-serif'], body: ['DM Sans', 'sans-serif'] }, colors: { primary: { DEFAULT: '#6366f1', dark: '#4f46e5', light: '#818cf8' }, surface: { DEFAULT: '#0f0f1a', card: '#161625', border: '#1e1e35' } } } }
+    };
+  </script>
+</head>
+<body class="bg-surface text-white font-body antialiased min-h-screen">
+
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-surface-card border-r border-surface-border fixed inset-y-0 left-0 z-40 hidden lg:flex flex-col">
+      <div class="p-5 border-b border-surface-border">
+        <a href="/" class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </div>
+          <span class="font-display font-bold text-lg">EventSphere</span>
+        </a>
+      </div>
+      <nav class="flex-1 p-4 space-y-1">
+        <a href="/pages/dashboard.html" class="sidebar-link">📊 Overview</a>
+        <a href="/pages/my-events.html" class="sidebar-link active">🎪 My Events</a>
+        <a href="/pages/create-event.html" class="sidebar-link">➕ Create Event</a>
+        <a href="/pages/checkin.html" class="sidebar-link">✅ Check-In</a>
+        <div class="pt-4 border-t border-surface-border mt-4">
+          <a href="/" class="sidebar-link">🏠 Browse Events</a>
+          <button onclick="Auth.logout()" class="sidebar-link w-full text-left text-red-400">🚪 Sign Out</button>
+        </div>
+      </nav>
+      <div class="p-4 border-t border-surface-border">
+        <div class="flex items-center gap-3">
+          <div id="sidebar-avatar" class="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary-light">?</div>
+          <div id="sidebar-name" class="text-sm font-medium">Loading...</div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="flex-1 lg:ml-64">
+      <header class="bg-surface-card border-b border-surface-border px-6 py-4 flex items-center justify-between sticky top-0 z-30">
+        <div>
+          <h1 class="font-display text-xl font-bold">My Events</h1>
+          <p class="text-xs text-slate-400 mt-0.5">Manage all your events</p>
+        </div>
+        <a href="/pages/create-event.html" class="btn-primary text-sm">+ New Event</a>
+      </header>
+
+      <main class="p-6">
+        <!-- Filter tabs -->
+        <div class="flex gap-2 mb-6 flex-wrap">
+          <button onclick="filterEvents('')" class="filter-chip active" data-status="">All</button>
+          <button onclick="filterEvents('PUBLISHED')" class="filter-chip" data-status="PUBLISHED">Published</button>
+          <button onclick="filterEvents('DRAFT')" class="filter-chip" data-status="DRAFT">Draft</button>
+          <button onclick="filterEvents('COMPLETED')" class="filter-chip" data-status="COMPLETED">Completed</button>
+          <button onclick="filterEvents('CANCELLED')" class="filter-chip" data-status="CANCELLED">Cancelled</button>
+        </div>
+
+        <!-- Events list -->
+        <div id="events-list" class="space-y-4">
+          <div class="skeleton-card h-28 rounded-2xl"></div>
+          <div class="skeleton-card h-28 rounded-2xl"></div>
+          <div class="skeleton-card h-28 rounded-2xl"></div>
+        </div>
+
+        <div id="events-empty" class="hidden text-center py-20">
+          <div class="text-5xl mb-4">🎪</div>
+          <h3 class="font-display text-xl font-semibold mb-2">No events yet</h3>
+          <p class="text-slate-400 mb-6">Create your first event to get started</p>
+          <a href="/pages/create-event.html" class="btn-primary">Create Event</a>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="../js/env.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!Auth.requireOrganizer()) return;
+      const user = Auth.getUser();
+      document.getElementById('sidebar-name').textContent = user.name;
+      document.getElementById('sidebar-avatar').textContent = user.name.charAt(0);
+      await loadEvents();
+    });
+
+    let currentStatus = '';
+
+    async function loadEvents() {
+      try {
+        const params = { limit: 50 };
+        if (currentStatus) params.status = currentStatus;
+        const res = await API.events.myEvents(params);
+        renderEvents(res.data.events);
+      } catch (err) {
+        Toast.error('Failed to load events');
+      }
+    }
+
+    function filterEvents(status) {
+      currentStatus = status;
+      document.querySelectorAll('[data-status]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.status === status);
+      });
+      loadEvents();
+    }
+
+    function renderEvents(events) {
+      const list = document.getElementById('events-list');
+      const empty = document.getElementById('events-empty');
+      if (!events.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
+      empty.classList.add('hidden');
+
+      const statusColors = {
+        PUBLISHED: 'text-green-400 border-green-500/30 bg-green-500/5',
+        DRAFT: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/5',
+        CANCELLED: 'text-red-400 border-red-500/30 bg-red-500/5',
+        COMPLETED: 'text-slate-400 border-slate-500/30 bg-slate-500/5',
+      };
+
+      list.innerHTML = events.map(e => {
+        const revenue = e.ticketTypes.reduce((sum, tt) => sum + tt.price * tt.sold, 0);
+        const soldOut = e.bookedCount >= e.totalCapacity && e.totalCapacity > 0;
+
+        return `
+        <div class="bg-surface-card border border-surface-border rounded-2xl p-5 hover:border-primary/30 transition-colors">
+          <div class="flex gap-4">
+            ${e.bannerImage
+              ? `<img src="${e.bannerImage}" class="w-20 h-16 object-cover rounded-xl flex-shrink-0" />`
+              : `<div class="w-20 h-16 bg-surface-border rounded-xl flex items-center justify-center text-2xl flex-shrink-0">${CATEGORY_EMOJI[e.category] || '🎪'}</div>`
+            }
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <h3 class="font-display font-semibold truncate">${e.title}</h3>
+                  <div class="text-sm text-slate-400 mt-0.5">${formatDate(e.startDate)} · ${e.city || e.venue}</div>
+                </div>
+                <span class="text-xs px-2.5 py-1 rounded-full border flex-shrink-0 ${statusColors[e.status] || ''}">${e.status}</span>
+              </div>
+              <div class="flex flex-wrap gap-4 mt-3 text-sm">
+                <span class="text-slate-400">🎟 <strong class="text-white">${e.bookedCount}</strong>/${e.totalCapacity} sold</span>
+                <span class="text-slate-400">💰 <strong class="text-primary-light">${formatINR(revenue)}</strong></span>
+                ${soldOut ? '<span class="text-red-400 text-xs">SOLD OUT</span>' : ''}
+              </div>
+            </div>
+          </div>
+          <div class="flex gap-2 mt-4 pt-3 border-t border-surface-border flex-wrap">
+            <a href="/pages/event-detail.html?id=${e.id}" class="btn-secondary text-xs py-1.5 px-3">👁 View</a>
+            <a href="/pages/dashboard.html?event=${e.id}" class="btn-secondary text-xs py-1.5 px-3">📊 Analytics</a>
+            ${e.status === 'DRAFT' ? `<button onclick="publishEvent('${e.id}')" class="btn-primary text-xs py-1.5 px-3">🚀 Publish</button>` : ''}
+            ${e.status === 'PUBLISHED' ? `<button onclick="cancelEvent('${e.id}')" class="text-xs text-slate-400 hover:text-red-400 px-2">Cancel</button>` : ''}
+            <button onclick="deleteEvent('${e.id}', '${e.title.replace(/'/g,'')}')" class="text-xs text-slate-500 hover:text-red-400 px-2 ml-auto">🗑 Delete</button>
+          </div>
+        </div>
+        `;
+      }).join('');
+    }
+
+    async function publishEvent(id) {
+      try {
+        await API.events.publish(id);
+        Toast.success('Event published!');
+        await loadEvents();
+      } catch (err) { Toast.error(err.message); }
+    }
+
+    async function cancelEvent(id) {
+      if (!confirm('Cancel this event? Attendees will be notified.')) return;
+      try {
+        await API.events.update(id, { status: 'CANCELLED' });
+        Toast.success('Event cancelled');
+        await loadEvents();
+      } catch (err) { Toast.error(err.message); }
+    }
+
+    async function deleteEvent(id, title) {
+      if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+      try {
+        await API.events.delete(id);
+        Toast.success('Event deleted');
+        await loadEvents();
+      } catch (err) { Toast.error(err.message || 'Cannot delete event with bookings'); }
+    }
+  </script>
+</body>
+</html>

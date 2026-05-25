@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Account — EventSphere</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { fontFamily: { display: ['Syne', 'sans-serif'], body: ['DM Sans', 'sans-serif'] }, colors: { primary: { DEFAULT: '#6366f1', dark: '#4f46e5', light: '#818cf8' }, surface: { DEFAULT: '#0f0f1a', card: '#161625', border: '#1e1e35' } } } }
+    };
+  </script>
+</head>
+<body class="bg-surface text-white font-body antialiased min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <div class="text-center mb-8">
+      <a href="/" class="inline-flex items-center gap-2">
+        <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <span class="font-display font-bold text-2xl">EventSphere</span>
+      </a>
+      <h1 class="font-display text-2xl font-bold mt-6 mb-1">Create your account</h1>
+      <p class="text-slate-400 text-sm">Join thousands of event creators and attendees</p>
+    </div>
+
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-8 space-y-5">
+      <!-- Role selector -->
+      <div>
+        <label class="form-label">I want to</label>
+        <div class="grid grid-cols-2 gap-3 mt-1">
+          <button type="button" onclick="setRole('ATTENDEE')" id="role-attendee" class="role-btn active p-3 border-2 border-primary rounded-xl text-sm font-medium text-center transition-all">
+            🎟 Attend Events
+          </button>
+          <button type="button" onclick="setRole('ORGANIZER')" id="role-organizer" class="role-btn p-3 border-2 border-surface-border rounded-xl text-sm font-medium text-center text-slate-400 transition-all hover:border-primary/50">
+            🎪 Organize Events
+          </button>
+        </div>
+        <input type="hidden" id="role" value="ATTENDEE" />
+      </div>
+
+      <div>
+        <label class="form-label">Full Name</label>
+        <input id="name" type="text" class="form-input" placeholder="John Doe" autocomplete="name" />
+      </div>
+      <div>
+        <label class="form-label">Email Address</label>
+        <input id="email" type="email" class="form-input" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <div>
+        <label class="form-label">Password</label>
+        <div class="relative">
+          <input id="password" type="password" class="form-input pr-10" placeholder="Min. 8 characters" autocomplete="new-password" />
+          <button type="button" onclick="togglePwd()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">👁</button>
+        </div>
+      </div>
+
+      <button id="register-btn" onclick="handleRegister()" class="btn-primary w-full py-3 text-base">
+        Create Account
+      </button>
+
+      <div class="text-center text-sm text-slate-400">
+        Already have an account?
+        <a href="/pages/login.html" class="text-primary-light hover:underline font-medium">Sign in</a>
+      </div>
+    </div>
+
+    <p class="text-center text-xs text-slate-600 mt-4">
+      By creating an account, you agree to our Terms of Service and Privacy Policy.
+    </p>
+  </div>
+
+  <script src="../js/env.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    if (Auth.isLoggedIn()) window.location.href = '/';
+
+    function setRole(role) {
+      document.getElementById('role').value = role;
+      document.getElementById('role-attendee').className = `role-btn p-3 border-2 ${role === 'ATTENDEE' ? 'border-primary text-white' : 'border-surface-border text-slate-400 hover:border-primary/50'} rounded-xl text-sm font-medium text-center transition-all`;
+      document.getElementById('role-organizer').className = `role-btn p-3 border-2 ${role === 'ORGANIZER' ? 'border-primary text-white' : 'border-surface-border text-slate-400 hover:border-primary/50'} rounded-xl text-sm font-medium text-center transition-all`;
+    }
+
+    async function handleRegister() {
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const role = document.getElementById('role').value;
+      const btn = document.getElementById('register-btn');
+
+      if (!name || !email || !password) { Toast.error('Please fill in all fields'); return; }
+      if (password.length < 8) { Toast.error('Password must be at least 8 characters'); return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Creating account...';
+
+      try {
+        const res = await API.auth.register({ name, email, password, role });
+        Auth.saveSession(res.data.user, res.data.token);
+        Toast.success('Welcome to EventSphere!');
+        setTimeout(() => window.location.href = role === 'ORGANIZER' ? '/pages/dashboard.html' : '/', 600);
+      } catch (err) {
+        Toast.error(err.message || 'Registration failed');
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    }
+
+    function togglePwd() {
+      const input = document.getElementById('password');
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+  </script>
+</body>
+</html>

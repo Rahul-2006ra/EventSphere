@@ -1,0 +1,110 @@
+# ─────────────────────────────────────────────
+# EventSphere - .gitignore
+# CRITICAL: Never commit secrets or sensitive data
+# ─────────────────────────────────────────────
+
+# ── Environment Variables (NEVER commit) ──
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# ── Node.js ──
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+venv/
+.venv/
+env/
+ENV/
+pip-log.txt
+pip-delete-this-directory.txt
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# ── Prisma ──
+# Keep schema.prisma and migrations, ignore generated client if needed
+# backend-node/node_modules/.prisma/
+
+# ── Uploads (user-generated content) ──
+backend-node/uploads/*
+!backend-node/uploads/.gitkeep
+
+# ── Logs ──
+*.log
+logs/
+/var/log/
+
+# ── OS / Editor files ──
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/settings.json
+*.suo
+*.user
+
+# ── Coverage & Testing ──
+coverage/
+.nyc_output
+htmlcov/
+.coverage
+.tox/
+.pytest_cache/
+.hypothesis/
+
+# ── PM2 ──
+.pm2/
+
+# ── Build outputs ──
+dist/
+out/
+.next/
+.nuxt/
+
+# ── Certificates / Keys ──
+*.pem
+*.key
+*.crt
+*.cert
+*.p12
+*.pfx
+
+# ── Database dumps ──
+*.sql
+*.dump
+*.sqlite
+*.db
+
+# ── Temporary files ──
+tmp/
+temp/
+.tmp/
+*.tmp
+*.temp
+
+# Local screenshots / accidental shell brace output
+localhost-*.png
+{frontend/

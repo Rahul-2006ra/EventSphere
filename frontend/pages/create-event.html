@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Event — EventSphere</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { fontFamily: { display: ['Syne', 'sans-serif'], body: ['DM Sans', 'sans-serif'] }, colors: { primary: { DEFAULT: '#6366f1', dark: '#4f46e5', light: '#818cf8' }, accent: { DEFAULT: '#f59e0b' }, surface: { DEFAULT: '#0f0f1a', card: '#161625', border: '#1e1e35' } } } }
+    };
+  </script>
+</head>
+<body class="bg-surface text-white font-body antialiased">
+
+  <!-- Navbar -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-surface-card border-b border-surface-border">
+    <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <span class="font-display font-bold text-lg">EventSphere</span>
+      </a>
+      <div class="flex items-center gap-3">
+        <a href="/pages/dashboard.html" class="btn-secondary text-sm">← Dashboard</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-5xl mx-auto px-4 pt-24 pb-20">
+    <div class="mb-8">
+      <h1 class="font-display text-3xl font-bold">Create New Event</h1>
+      <p class="text-slate-400 mt-1">Fill in the details to publish your event</p>
+    </div>
+
+    <form id="create-event-form" class="grid grid-cols-1 lg:grid-cols-3 gap-8" onsubmit="return false;">
+
+      <!-- LEFT: Main fields -->
+      <div class="lg:col-span-2 space-y-6">
+
+        <!-- Basic Info -->
+        <div class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+          <h2 class="font-display font-semibold text-lg">Basic Information</h2>
+
+          <div>
+            <label class="form-label">Event Title *</label>
+            <input id="title" type="text" class="form-input" placeholder="e.g., TechConf 2025" required />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">Category *</label>
+              <select id="category" class="form-input" required>
+                <option value="">Select category</option>
+                <option value="CONFERENCE">Conference</option>
+                <option value="CONCERT">Concert</option>
+                <option value="WORKSHOP">Workshop</option>
+                <option value="SEMINAR">Seminar</option>
+                <option value="MEETUP">Meetup</option>
+                <option value="FESTIVAL">Festival</option>
+                <option value="SPORTS">Sports</option>
+                <option value="NETWORKING">Networking</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">City</label>
+              <input id="city" type="text" class="form-input" placeholder="Mumbai, Delhi..." />
+            </div>
+          </div>
+
+          <!-- AI Description Generator -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="form-label mb-0">Description *</label>
+              <button type="button" onclick="generateAIDescription()" id="ai-btn" class="flex items-center gap-1.5 text-xs text-primary-light hover:text-white border border-primary/30 hover:border-primary rounded-lg px-2.5 py-1 transition-all">
+                <span>✨</span> Generate with AI
+              </button>
+            </div>
+            <textarea id="description" class="form-input h-40 resize-none" placeholder="Describe your event in detail..." required></textarea>
+            <div id="ai-loading" class="hidden text-xs text-slate-400 mt-1 flex items-center gap-1.5">
+              <span class="animate-spin">⟳</span> AI is crafting your description...
+            </div>
+          </div>
+
+          <div>
+            <label class="form-label">Short Description</label>
+            <input id="short-desc" type="text" class="form-input" placeholder="One-line teaser (max 150 chars)" maxlength="150" />
+          </div>
+
+          <div>
+            <label class="form-label">Banner Image URL</label>
+            <input id="banner-image" type="url" class="form-input" placeholder="https://..." />
+            <div id="banner-preview" class="mt-2 hidden">
+              <img id="banner-img-preview" src="" alt="Banner preview" class="w-full h-32 object-cover rounded-lg" />
+            </div>
+          </div>
+
+          <div>
+            <label class="form-label">Tags (comma separated)</label>
+            <input id="tags" type="text" class="form-input" placeholder="tech, innovation, startup..." />
+          </div>
+        </div>
+
+        <!-- Date & Venue -->
+        <div class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+          <h2 class="font-display font-semibold text-lg">Date & Venue</h2>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">Start Date & Time *</label>
+              <input id="start-date" type="datetime-local" class="form-input" required />
+            </div>
+            <div>
+              <label class="form-label">End Date & Time *</label>
+              <input id="end-date" type="datetime-local" class="form-input" required />
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <input id="is-online" type="checkbox" class="w-4 h-4 accent-primary" onchange="toggleOnlineMode()" />
+            <label for="is-online" class="text-sm text-slate-300">This is an online event</label>
+          </div>
+
+          <div id="venue-fields" class="space-y-4">
+            <div>
+              <label class="form-label">Venue Name *</label>
+              <input id="venue" type="text" class="form-input" placeholder="Convention Center, Hotel..." />
+            </div>
+            <div>
+              <label class="form-label">Full Address</label>
+              <input id="address" type="text" class="form-input" placeholder="123 Main Street..." />
+            </div>
+          </div>
+
+          <div id="online-fields" class="hidden">
+            <label class="form-label">Online Link</label>
+            <input id="online-link" type="url" class="form-input" placeholder="https://zoom.us/..." />
+          </div>
+        </div>
+
+        <!-- Ticket Types -->
+        <div class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-display font-semibold text-lg">Ticket Types</h2>
+            <button type="button" onclick="addTicketType()" class="btn-secondary text-xs py-1.5 px-3">+ Add Type</button>
+          </div>
+          <div id="ticket-types-container" class="space-y-4">
+            <!-- Ticket types added dynamically -->
+          </div>
+        </div>
+
+        <!-- Speakers -->
+        <div class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-display font-semibold text-lg">Speakers</h2>
+            <button type="button" onclick="addSpeaker()" class="btn-secondary text-xs py-1.5 px-3">+ Add Speaker</button>
+          </div>
+          <div id="speakers-container" class="space-y-3"></div>
+        </div>
+
+        <!-- FAQs -->
+        <div class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-display font-semibold text-lg">FAQs</h2>
+            <button type="button" onclick="addFaq()" class="btn-secondary text-xs py-1.5 px-3">+ Add FAQ</button>
+          </div>
+          <div id="faqs-container" class="space-y-3"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Sidebar -->
+      <div class="lg:col-span-1 space-y-4">
+        <div class="sticky top-24 space-y-4">
+
+          <!-- Publish -->
+          <div class="bg-surface-card border border-surface-border rounded-2xl p-5 space-y-3">
+            <h3 class="font-display font-semibold">Publish Settings</h3>
+            <div class="flex items-center gap-3">
+              <input id="is-featured" type="checkbox" class="w-4 h-4 accent-primary" />
+              <label for="is-featured" class="text-sm text-slate-300">Feature this event</label>
+            </div>
+            <button type="button" onclick="submitEvent('DRAFT')" class="btn-secondary w-full text-sm">Save as Draft</button>
+            <button type="button" onclick="submitEvent('PUBLISHED')" class="btn-primary w-full text-sm">Publish Event</button>
+          </div>
+
+          <!-- AI Schedule Generator -->
+          <div class="bg-surface-card border border-surface-border rounded-2xl p-5 space-y-3">
+            <h3 class="font-display font-semibold flex items-center gap-2">✨ AI Schedule <span class="text-xs text-primary-light font-normal border border-primary/30 rounded-full px-2 py-0.5">Gemini</span></h3>
+            <p class="text-xs text-slate-400">Let AI generate an optimized schedule for your event</p>
+            <input id="schedule-duration" type="number" class="form-input text-sm" placeholder="Duration (hours)" min="1" max="24" value="8" />
+            <input id="schedule-topics" type="text" class="form-input text-sm" placeholder="Topics (comma separated)" />
+            <button type="button" onclick="generateSchedule()" class="btn-primary w-full text-sm">Generate Schedule</button>
+            <div id="schedule-result" class="hidden text-xs text-slate-300 bg-surface border border-surface-border rounded-xl p-3 max-h-60 overflow-y-auto"></div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </main>
+
+  <script src="../js/env.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!Auth.requireOrganizer()) return;
+      addTicketType(); // Add one ticket type by default
+    });
+
+    let ticketTypeCount = 0;
+    let speakerCount = 0;
+    let faqCount = 0;
+
+    function addTicketType() {
+      const id = ticketTypeCount++;
+      const container = document.getElementById('ticket-types-container');
+      const div = document.createElement('div');
+      div.id = `ticket-${id}`;
+      div.className = 'p-4 border border-surface-border rounded-xl space-y-3 relative';
+      div.innerHTML = `
+        <button type="button" onclick="document.getElementById('ticket-${id}').remove()" class="absolute top-3 right-3 text-slate-500 hover:text-red-400 text-lg">×</button>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="form-label text-xs">Ticket Name *</label>
+            <input name="tt-name" type="text" class="form-input text-sm" placeholder="General, VIP..." />
+          </div>
+          <div>
+            <label class="form-label text-xs">Price (₹) *</label>
+            <input name="tt-price" type="number" class="form-input text-sm" placeholder="0 for free" min="0" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="form-label text-xs">Quantity *</label>
+            <input name="tt-quantity" type="number" class="form-input text-sm" placeholder="100" min="1" />
+          </div>
+          <div>
+            <label class="form-label text-xs">Max Per Order</label>
+            <input name="tt-max" type="number" class="form-input text-sm" placeholder="10" min="1" value="10" />
+          </div>
+        </div>
+        <div>
+          <label class="form-label text-xs">Description</label>
+          <input name="tt-desc" type="text" class="form-input text-sm" placeholder="What's included..." />
+        </div>
+        <div>
+          <label class="form-label text-xs">Perks (comma separated)</label>
+          <input name="tt-perks" type="text" class="form-input text-sm" placeholder="Free lunch, Networking, Certificate..." />
+        </div>
+      `;
+      container.appendChild(div);
+    }
+
+    function addSpeaker() {
+      const id = speakerCount++;
+      const container = document.getElementById('speakers-container');
+      const div = document.createElement('div');
+      div.id = `speaker-${id}`;
+      div.className = 'p-4 border border-surface-border rounded-xl space-y-2 relative';
+      div.innerHTML = `
+        <button type="button" onclick="document.getElementById('speaker-${id}').remove()" class="absolute top-3 right-3 text-slate-500 hover:text-red-400 text-lg">×</button>
+        <input name="sp-name" type="text" class="form-input text-sm" placeholder="Speaker Name" />
+        <input name="sp-title" type="text" class="form-input text-sm" placeholder="Job Title / Organization" />
+        <textarea name="sp-bio" class="form-input text-sm h-16 resize-none" placeholder="Short bio..."></textarea>
+      `;
+      container.appendChild(div);
+    }
+
+    function addFaq() {
+      const id = faqCount++;
+      const container = document.getElementById('faqs-container');
+      const div = document.createElement('div');
+      div.id = `faq-${id}`;
+      div.className = 'p-4 border border-surface-border rounded-xl space-y-2 relative';
+      div.innerHTML = `
+        <button type="button" onclick="document.getElementById('faq-${id}').remove()" class="absolute top-3 right-3 text-slate-500 hover:text-red-400 text-lg">×</button>
+        <input name="faq-q" type="text" class="form-input text-sm" placeholder="Question..." />
+        <textarea name="faq-a" class="form-input text-sm h-16 resize-none" placeholder="Answer..."></textarea>
+      `;
+      container.appendChild(div);
+    }
+
+    function toggleOnlineMode() {
+      const isOnline = document.getElementById('is-online').checked;
+      document.getElementById('venue-fields').classList.toggle('hidden', isOnline);
+      document.getElementById('online-fields').classList.toggle('hidden', !isOnline);
+    }
+
+    // Banner preview
+    document.addEventListener('DOMContentLoaded', () => {
+      const bannerInput = document.getElementById('banner-image');
+      if (bannerInput) {
+        bannerInput.addEventListener('input', () => {
+          const url = bannerInput.value;
+          const preview = document.getElementById('banner-preview');
+          const img = document.getElementById('banner-img-preview');
+          if (url) { img.src = url; preview.classList.remove('hidden'); }
+          else { preview.classList.add('hidden'); }
+        });
+      }
+    });
+
+    // ── AI Description Generator ──
+    async function generateAIDescription() {
+      const title = document.getElementById('title').value;
+      const category = document.getElementById('category').value;
+      const venue = document.getElementById('venue').value;
+      const startDate = document.getElementById('start-date').value;
+
+      if (!title) { Toast.error('Please enter a title first'); return; }
+
+      const btn = document.getElementById('ai-btn');
+      const loading = document.getElementById('ai-loading');
+      btn.disabled = true;
+      loading.classList.remove('hidden');
+
+      try {
+        const res = await API.ai.generateDescription({ title, category, venue, date: startDate });
+        const data = res.data;
+
+        document.getElementById('description').value = data.fullDescription || '';
+        if (data.shortDescription) document.getElementById('short-desc').value = data.shortDescription;
+
+        Toast.success('AI description generated!');
+      } catch (err) {
+        Toast.error('AI generation failed. Please write manually.');
+      } finally {
+        btn.disabled = false;
+        loading.classList.add('hidden');
+      }
+    }
+
+    // ── AI Schedule Generator ──
+    async function generateSchedule() {
+      const title = document.getElementById('title').value;
+      const duration = document.getElementById('schedule-duration').value;
+      const topicsRaw = document.getElementById('schedule-topics').value;
+      const topics = topicsRaw.split(',').map(t => t.trim()).filter(Boolean);
+
+      if (!title) { Toast.error('Please enter event title first'); return; }
+
+      try {
+        const res = await API.ai.schedule({ eventTitle: title, duration: parseInt(duration), topics });
+        const schedule = res.data.schedule || [];
+        const result = document.getElementById('schedule-result');
+        result.classList.remove('hidden');
+        result.innerHTML = `
+          <div class="font-medium mb-2 text-white">Generated Schedule (${res.data.totalSessions} sessions)</div>
+          ${schedule.map(s => `
+            <div class="flex gap-2 py-1.5 border-b border-surface-border last:border-0">
+              <span class="text-primary-light w-20 flex-shrink-0 text-xs">${s.time}</span>
+              <div>
+                <div class="font-medium text-white text-xs">${s.title}</div>
+                ${s.speaker ? `<div class="text-slate-500 text-xs">${s.speaker}</div>` : ''}
+              </div>
+            </div>
+          `).join('')}
+        `;
+        Toast.success('Schedule generated!');
+      } catch (err) {
+        Toast.error('Schedule generation failed');
+      }
+    }
+
+    // ── Collect & Submit Form ──
+    async function submitEvent(status) {
+      const title = document.getElementById('title').value.trim();
+      const description = document.getElementById('description').value.trim();
+      const category = document.getElementById('category').value;
+      const startDate = document.getElementById('start-date').value;
+      const endDate = document.getElementById('end-date').value;
+      const venue = document.getElementById('venue').value.trim();
+
+      if (!title || !description || !category || !startDate || !endDate) {
+        Toast.error('Please fill in all required fields');
+        return;
+      }
+
+      // Collect ticket types
+      const ticketTypes = [];
+      document.querySelectorAll('#ticket-types-container > [id^="ticket-"]').forEach(el => {
+        const name = el.querySelector('[name="tt-name"]')?.value?.trim();
+        const price = el.querySelector('[name="tt-price"]')?.value;
+        const quantity = el.querySelector('[name="tt-quantity"]')?.value;
+        const maxPerOrder = el.querySelector('[name="tt-max"]')?.value;
+        const description = el.querySelector('[name="tt-desc"]')?.value?.trim();
+        const perksRaw = el.querySelector('[name="tt-perks"]')?.value;
+        const perks = perksRaw ? perksRaw.split(',').map(p => p.trim()).filter(Boolean) : [];
+
+        if (name && price !== '' && quantity) {
+          ticketTypes.push({ name, price: parseFloat(price), quantity: parseInt(quantity), maxPerOrder: parseInt(maxPerOrder) || 10, description, perks });
+        }
+      });
+
+      // Collect speakers
+      const speakers = [];
+      document.querySelectorAll('#speakers-container > [id^="speaker-"]').forEach(el => {
+        const name = el.querySelector('[name="sp-name"]')?.value?.trim();
+        const title = el.querySelector('[name="sp-title"]')?.value?.trim();
+        const bio = el.querySelector('[name="sp-bio"]')?.value?.trim();
+        if (name) speakers.push({ name, title, bio });
+      });
+
+      // Collect FAQs
+      const faqs = [];
+      document.querySelectorAll('#faqs-container > [id^="faq-"]').forEach(el => {
+        const question = el.querySelector('[name="faq-q"]')?.value?.trim();
+        const answer = el.querySelector('[name="faq-a"]')?.value?.trim();
+        if (question && answer) faqs.push({ question, answer });
+      });
+
+      const tagsRaw = document.getElementById('tags').value;
+      const tags = tagsRaw.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+
+      const payload = {
+        title,
+        description,
+        shortDesc: document.getElementById('short-desc').value.trim(),
+        category,
+        venue: document.getElementById('is-online').checked ? 'Online' : venue,
+        address: document.getElementById('address')?.value?.trim(),
+        city: document.getElementById('city').value.trim(),
+        startDate, endDate,
+        isOnline: document.getElementById('is-online').checked,
+        onlineLink: document.getElementById('online-link')?.value?.trim(),
+        bannerImage: document.getElementById('banner-image').value.trim() || null,
+        tags, speakers, faqs, ticketTypes,
+        isFeatured: document.getElementById('is-featured').checked,
+      };
+
+      try {
+        const res = await API.events.create(payload);
+        const eventId = res.data.id;
+
+        // If publishing directly
+        if (status === 'PUBLISHED') {
+          await API.events.publish(eventId);
+        }
+
+        Toast.success(status === 'PUBLISHED' ? 'Event published!' : 'Event saved as draft');
+        setTimeout(() => window.location.href = `/pages/event-detail.html?id=${eventId}`, 800);
+      } catch (err) {
+        Toast.error(err.message || 'Failed to create event');
+      }
+    }
+  </script>
+</body>
+</html>

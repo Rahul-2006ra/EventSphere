@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — EventSphere</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { fontFamily: { display: ['Syne', 'sans-serif'], body: ['DM Sans', 'sans-serif'] }, colors: { primary: { DEFAULT: '#6366f1', dark: '#4f46e5', light: '#818cf8' }, surface: { DEFAULT: '#0f0f1a', card: '#161625', border: '#1e1e35' } } } }
+    };
+  </script>
+</head>
+<body class="bg-surface text-white font-body antialiased min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <!-- Logo -->
+    <div class="text-center mb-8">
+      <a href="/" class="inline-flex items-center gap-2 group">
+        <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <span class="font-display font-bold text-2xl">EventSphere</span>
+      </a>
+      <h1 class="font-display text-2xl font-bold mt-6 mb-1">Welcome back</h1>
+      <p class="text-slate-400 text-sm">Sign in to continue to EventSphere</p>
+    </div>
+
+    <!-- Form card -->
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-8 space-y-5">
+      <div>
+        <label class="form-label">Email Address</label>
+        <input id="email" type="email" class="form-input" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <div>
+        <label class="form-label">Password</label>
+        <div class="relative">
+          <input id="password" type="password" class="form-input pr-10" placeholder="••••••••" autocomplete="current-password" />
+          <button type="button" onclick="togglePwd('password')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+            👁
+          </button>
+        </div>
+      </div>
+
+      <button id="login-btn" onclick="handleLogin()" class="btn-primary w-full py-3 text-base">
+        Sign In
+      </button>
+
+      <div class="relative flex items-center">
+        <div class="flex-1 border-t border-surface-border"></div>
+        <span class="mx-3 text-xs text-slate-500">or</span>
+        <div class="flex-1 border-t border-surface-border"></div>
+      </div>
+
+      <div class="text-center text-sm text-slate-400">
+        Don't have an account?
+        <a href="/pages/register.html" class="text-primary-light hover:underline font-medium">Create one</a>
+      </div>
+    </div>
+
+    <!-- Demo accounts -->
+    <div class="mt-4 p-4 bg-surface-card/50 border border-surface-border rounded-xl text-xs text-slate-500">
+      <div class="font-medium text-slate-400 mb-2">Demo Accounts</div>
+      <div class="space-y-1">
+        <div class="flex justify-between">
+          <span>Attendee:</span>
+          <button onclick="fillDemo('attendee@demo.com','demo1234')" class="text-primary-light hover:underline">attendee@demo.com</button>
+        </div>
+        <div class="flex justify-between">
+          <span>Organizer:</span>
+          <button onclick="fillDemo('organizer@demo.com','demo1234')" class="text-primary-light hover:underline">organizer@demo.com</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/env.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    // Redirect if already logged in
+    if (Auth.isLoggedIn()) window.location.href = '/';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('role') === 'organizer') {
+        fillDemo('organizer@demo.com', 'demo1234');
+        Toast.info('Organizer access required. Demo organizer account is ready.');
+      }
+    });
+
+    async function handleLogin() {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const btn = document.getElementById('login-btn');
+
+      if (!email || !password) { Toast.error('Please fill in all fields'); return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Signing in...';
+
+      try {
+        const res = await API.auth.login({ email, password });
+        Auth.saveSession(res.data.user, res.data.token);
+        Toast.success(`Welcome back, ${res.data.user.name}!`);
+
+        const params = new URLSearchParams(window.location.search);
+        const returnUrl = params.get('return') || (Auth.isOrganizer() ? '/pages/dashboard.html' : '/');
+        setTimeout(() => window.location.href = returnUrl, 500);
+      } catch (err) {
+        Toast.error(err.message || 'Login failed');
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      }
+    }
+
+    function fillDemo(email, pwd) {
+      document.getElementById('email').value = email;
+      document.getElementById('password').value = pwd;
+    }
+
+    function togglePwd(id) {
+      const input = document.getElementById(id);
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleLogin();
+    });
+  </script>
+</body>
+</html>

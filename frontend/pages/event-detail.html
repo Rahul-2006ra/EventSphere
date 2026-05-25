@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Event Details — EventSphere</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { display: ['Syne', 'sans-serif'], body: ['DM Sans', 'sans-serif'] },
+          colors: {
+            primary: { DEFAULT: '#6366f1', dark: '#4f46e5', light: '#818cf8' },
+            accent: { DEFAULT: '#f59e0b' },
+            surface: { DEFAULT: '#0f0f1a', card: '#161625', border: '#1e1e35' },
+          },
+        },
+      },
+    };
+  </script>
+</head>
+<body class="bg-surface text-white font-body antialiased">
+
+  <!-- NAVBAR -->
+  <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <a href="/" class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </div>
+          <span class="font-display font-bold text-xl">EventSphere</span>
+        </a>
+        <div id="nav-auth" class="flex items-center gap-3"></div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO BANNER -->
+  <div id="event-banner" class="relative h-80 sm:h-96 mt-16 overflow-hidden bg-surface-card">
+    <div id="banner-img" class="absolute inset-0 bg-gradient-to-br from-primary/20 to-surface flex items-center justify-center text-7xl">🎪</div>
+    <div class="absolute inset-0 bg-gradient-to-t from-surface via-surface/60 to-transparent"></div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-10">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+      <!-- LEFT: Event Details -->
+      <div class="lg:col-span-2 space-y-8">
+
+        <!-- Title block -->
+        <div id="event-header" class="space-y-4">
+          <div class="flex flex-wrap items-center gap-3">
+            <span id="event-category" class="card-badge"></span>
+            <span id="event-status-badge" class="card-badge"></span>
+            <span class="live-dot hidden" id="live-indicator">Live Updates</span>
+          </div>
+          <h1 id="event-title" class="font-display text-3xl sm:text-4xl font-bold leading-tight">Loading...</h1>
+          <div class="flex flex-wrap gap-4 text-sm text-slate-400">
+            <div class="flex items-center gap-1.5" id="event-date">
+              <svg class="w-4 h-4 text-primary-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              <span>—</span>
+            </div>
+            <div class="flex items-center gap-1.5" id="event-venue">
+              <svg class="w-4 h-4 text-primary-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+              </svg>
+              <span>—</span>
+            </div>
+            <div class="flex items-center gap-1.5" id="event-attendees">
+              <svg class="w-4 h-4 text-primary-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              <span id="attendee-count">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ticket availability bar -->
+        <div id="availability-bar" class="bg-surface-card border border-surface-border rounded-xl p-4 hidden">
+          <div class="flex justify-between text-sm mb-2">
+            <span class="text-slate-400">Ticket Availability</span>
+            <span id="avail-text" class="font-medium"></span>
+          </div>
+          <div class="h-2 bg-surface-border rounded-full overflow-hidden">
+            <div id="avail-bar" class="h-full rounded-full transition-all duration-500 bg-primary"></div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="border-b border-surface-border">
+          <div class="flex gap-6">
+            <button onclick="showTab('about')" class="tab-btn active pb-3 text-sm font-medium border-b-2 border-primary text-white" data-tab="about">About</button>
+            <button onclick="showTab('schedule')" class="tab-btn pb-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white transition-colors" data-tab="schedule">Schedule</button>
+            <button onclick="showTab('speakers')" class="tab-btn pb-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white transition-colors" data-tab="speakers">Speakers</button>
+            <button onclick="showTab('faq')" class="tab-btn pb-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white transition-colors" data-tab="faq">FAQ</button>
+            <button onclick="showTab('reviews')" class="tab-btn pb-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-white transition-colors" data-tab="reviews">Reviews</button>
+          </div>
+        </div>
+
+        <!-- Tab: About -->
+        <div id="tab-about" class="tab-content space-y-6">
+          <div id="event-description" class="text-slate-300 leading-relaxed text-sm"></div>
+          <div id="event-tags" class="flex flex-wrap gap-2"></div>
+          <div id="organizer-section" class="flex items-center gap-3 p-4 bg-surface-card border border-surface-border rounded-xl">
+            <div id="organizer-avatar" class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center font-display font-bold text-primary-light text-lg"></div>
+            <div>
+              <div class="text-xs text-slate-500 mb-0.5">Organized by</div>
+              <div id="organizer-name" class="font-medium text-sm"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Schedule -->
+        <div id="tab-schedule" class="tab-content hidden">
+          <div id="schedule-content" class="text-slate-400 text-sm">No schedule available for this event.</div>
+        </div>
+
+        <!-- Tab: Speakers -->
+        <div id="tab-speakers" class="tab-content hidden">
+          <div id="speakers-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <p class="text-slate-400 text-sm col-span-2">No speakers listed for this event.</p>
+          </div>
+        </div>
+
+        <!-- Tab: FAQ -->
+        <div id="tab-faq" class="tab-content hidden space-y-3">
+          <div id="faq-list"><p class="text-slate-400 text-sm">No FAQs available.</p></div>
+        </div>
+
+        <!-- Tab: Reviews -->
+        <div id="tab-reviews" class="tab-content hidden space-y-4">
+          <div id="reviews-summary" class="flex items-center gap-4 p-4 bg-surface-card border border-surface-border rounded-xl mb-4"></div>
+          <div id="reviews-list" class="space-y-3"></div>
+          <div id="review-form" class="hidden mt-6 p-4 bg-surface-card border border-surface-border rounded-xl space-y-3">
+            <h3 class="font-display font-semibold">Write a Review</h3>
+            <div class="flex gap-2" id="star-rating">
+              ${[1,2,3,4,5].map(i => `<button onclick="setRating(${i})" class="star-btn text-2xl text-slate-600 hover:text-amber-400 transition-colors" data-val="${i}">★</button>`).join('')}
+            </div>
+            <textarea id="review-body" class="form-input h-24 resize-none" placeholder="Share your experience..."></textarea>
+            <button onclick="submitReview()" class="btn-primary text-sm">Submit Review</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Booking Sidebar -->
+      <div class="lg:col-span-1">
+        <div class="sticky top-24 space-y-4">
+
+          <!-- Ticket selector -->
+          <div class="bg-surface-card border border-surface-border rounded-2xl p-5 space-y-4">
+            <h3 class="font-display font-semibold text-lg">Select Tickets</h3>
+            <div id="ticket-types-list" class="space-y-3">
+              <div class="skeleton-card h-16 rounded-xl"></div>
+              <div class="skeleton-card h-16 rounded-xl"></div>
+            </div>
+
+            <!-- Total -->
+            <div class="pt-3 border-t border-surface-border">
+              <div class="flex justify-between text-sm mb-1">
+                <span class="text-slate-400">Total</span>
+                <span id="booking-total" class="font-display font-bold text-lg text-primary-light">₹0</span>
+              </div>
+            </div>
+
+            <button id="book-btn" onclick="initiateBooking()" class="btn-primary w-full text-base py-3 disabled:opacity-50 disabled:cursor-not-allowed">
+              Book Now
+            </button>
+            <button onclick="toggleWishlist()" id="wishlist-btn" class="btn-secondary w-full text-sm">
+              ♡ Save to Wishlist
+            </button>
+          </div>
+
+          <!-- Share -->
+          <div class="bg-surface-card border border-surface-border rounded-xl p-4">
+            <p class="text-sm text-slate-400 mb-3">Share this event</p>
+            <div class="flex gap-2">
+              <button onclick="shareEvent('twitter')" class="flex-1 btn-secondary text-xs py-2">𝕏 Twitter</button>
+              <button onclick="shareEvent('whatsapp')" class="flex-1 btn-secondary text-xs py-2">💬 WhatsApp</button>
+              <button onclick="copyLink()" class="flex-1 btn-secondary text-xs py-2">🔗 Copy Link</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- BOOKING MODAL -->
+  <div class="modal-overlay" id="booking-modal">
+    <div class="modal max-w-lg">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="font-display text-xl font-bold">Complete Booking</h2>
+        <button onclick="closeModal('booking-modal')" class="text-slate-400 hover:text-white text-2xl leading-none">×</button>
+      </div>
+      <div id="booking-modal-content"></div>
+    </div>
+  </div>
+
+  <!-- SUCCESS MODAL -->
+  <div class="modal-overlay" id="success-modal">
+    <div class="modal max-w-lg text-center">
+      <div class="text-6xl mb-4">🎉</div>
+      <h2 class="font-display text-2xl font-bold mb-2">Booking Confirmed!</h2>
+      <p class="text-slate-400 mb-6">Your tickets have been issued. Check your bookings for QR codes.</p>
+      <div id="booking-summary" class="text-left bg-surface border border-surface-border rounded-xl p-4 mb-6 text-sm space-y-2"></div>
+      <div class="flex gap-3">
+        <a href="/pages/my-bookings.html" class="btn-primary flex-1">View Tickets</a>
+        <button onclick="closeModal('success-modal')" class="btn-secondary flex-1">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:80px"></div>
+
+  <script src="../js/env.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/event-detail.js"></script>
+</body>
+</html>

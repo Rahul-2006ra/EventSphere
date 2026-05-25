@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Bookings — EventSphere</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { fontFamily: { display: ['Syne', 'sans-serif'], body: ['DM Sans', 'sans-serif'] }, colors: { primary: { DEFAULT: '#6366f1', dark: '#4f46e5', light: '#818cf8' }, surface: { DEFAULT: '#0f0f1a', card: '#161625', border: '#1e1e35' } } } }
+    };
+  </script>
+</head>
+<body class="bg-surface text-white font-body antialiased min-h-screen">
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-surface-card border-b border-surface-border">
+    <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </div>
+        <span class="font-display font-bold text-lg">EventSphere</span>
+      </a>
+      <div id="nav-auth"></div>
+    </div>
+  </nav>
+
+  <main class="max-w-4xl mx-auto px-4 pt-24 pb-20">
+    <h1 class="font-display text-2xl font-bold mb-6">My Bookings</h1>
+
+    <!-- Filter tabs -->
+    <div class="flex gap-2 mb-6 border-b border-surface-border pb-4">
+      <button onclick="filterBookings('')" class="filter-chip active" data-status="">All</button>
+      <button onclick="filterBookings('CONFIRMED')" class="filter-chip" data-status="CONFIRMED">Confirmed</button>
+      <button onclick="filterBookings('PENDING')" class="filter-chip" data-status="PENDING">Pending</button>
+      <button onclick="filterBookings('CANCELLED')" class="filter-chip" data-status="CANCELLED">Cancelled</button>
+    </div>
+
+    <div id="bookings-list" class="space-y-4">
+      <div class="skeleton-card h-32 rounded-2xl"></div>
+      <div class="skeleton-card h-32 rounded-2xl"></div>
+    </div>
+
+    <div id="bookings-empty" class="hidden text-center py-20">
+      <div class="text-5xl mb-4">🎟</div>
+      <h3 class="font-display text-xl font-semibold mb-2">No bookings yet</h3>
+      <p class="text-slate-400 mb-6">Start exploring and book your first event!</p>
+      <a href="/" class="btn-primary">Browse Events</a>
+    </div>
+  </main>
+
+  <!-- Ticket QR Modal -->
+  <div class="modal-overlay" id="ticket-modal">
+    <div class="modal max-w-md text-center">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="font-display text-xl font-bold">Your Ticket</h2>
+        <button onclick="closeModal('ticket-modal')" class="text-slate-400 hover:text-white text-2xl leading-none">×</button>
+      </div>
+      <div id="ticket-modal-content"></div>
+    </div>
+  </div>
+
+  <script src="../js/env.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!Auth.requireAuth()) return;
+      await loadBookings();
+    });
+
+    let currentStatus = '';
+    let renderedBookings = [];
+
+    async function loadBookings() {
+      try {
+        const params = {};
+        if (currentStatus) params.status = currentStatus;
+        const res = await API.bookings.list(params);
+        renderBookings(res.data.bookings);
+      } catch (err) {
+        Toast.error('Failed to load bookings');
+      }
+    }
+
+    function filterBookings(status) {
+      currentStatus = status;
+      document.querySelectorAll('[data-status]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.status === status);
+      });
+      loadBookings();
+    }
+
+    function renderBookings(bookings) {
+      const list = document.getElementById('bookings-list');
+      const empty = document.getElementById('bookings-empty');
+      renderedBookings = bookings;
+
+      if (!bookings.length) {
+        list.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+
+      empty.classList.add('hidden');
+      list.innerHTML = bookings.map((b, bookingIndex) => {
+        const statusColors = {
+          CONFIRMED: 'text-green-400 bg-green-500/10 border-green-500/20',
+          PENDING: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
+          CANCELLED: 'text-red-400 bg-red-500/10 border-red-500/20',
+          FAILED: 'text-slate-400 bg-slate-500/10 border-slate-500/20',
+        };
+
+        return `
+        <div class="bg-surface-card border border-surface-border rounded-2xl overflow-hidden hover:border-primary/30 transition-colors">
+          <div class="flex gap-4 p-5">
+            ${b.event.bannerImage
+              ? `<img src="${b.event.bannerImage}" class="w-24 h-20 object-cover rounded-xl flex-shrink-0" />`
+              : `<div class="w-24 h-20 bg-surface-border rounded-xl flex items-center justify-center text-3xl flex-shrink-0">🎪</div>`
+            }
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <a href="/pages/event-detail.html?id=${b.event.id}" class="font-display font-semibold hover:text-primary-light transition-colors">${b.event.title}</a>
+                <span class="text-xs px-2 py-0.5 rounded-full border flex-shrink-0 ${statusColors[b.status] || ''}">${b.status}</span>
+              </div>
+              <div class="text-sm text-slate-400 mt-1">${formatDate(b.event.startDate)} · ${b.event.venue || b.event.city || ''}</div>
+              <div class="flex items-center gap-4 mt-3">
+                <span class="text-xs text-slate-500">Ref: <span class="font-mono text-slate-400">${b.bookingRef?.slice(0,12) || b.id.slice(0,12)}</span></span>
+                <span class="text-xs text-slate-500">${b.tickets.length} ticket(s)</span>
+                <span class="text-sm font-bold text-primary-light">${formatINR(b.totalAmount)}</span>
+              </div>
+            </div>
+          </div>
+
+          ${b.status === 'CONFIRMED' ? `
+          <div class="border-t border-surface-border px-5 py-3 flex gap-2 flex-wrap">
+            ${b.tickets.map((t, i) => `
+              <button onclick="showTicketQRByIndex(${bookingIndex}, ${i})" class="btn-secondary text-xs py-1.5 px-3">
+                🎫 ${t.ticketType?.name || 'Ticket'} ${i + 1}
+              </button>
+            `).join('')}
+            <button onclick="downloadAllTickets('${b.id}')" class="btn-secondary text-xs py-1.5 px-3">⬇ Download All</button>
+            ${new Date(b.event.startDate) > new Date()
+              ? `<button onclick="cancelBooking('${b.id}')" class="text-xs text-red-400 hover:text-red-300 px-2">Cancel</button>`
+              : ''
+            }
+          </div>
+          ` : ''}
+        </div>
+        `;
+      }).join('');
+    }
+
+    function showTicketQRByIndex(bookingIndex, ticketIndex) {
+      const booking = renderedBookings[bookingIndex];
+      const ticket = booking?.tickets?.[ticketIndex];
+      if (!booking || !ticket) {
+        Toast.error('Ticket not found');
+        return;
+      }
+      showTicketQR(ticket, booking.event);
+    }
+
+    function showTicketQR(ticket, event) {
+      document.getElementById('ticket-modal-content').innerHTML = `
+        <div class="space-y-4">
+          <div class="bg-surface border border-surface-border rounded-xl p-4">
+            <div class="text-xs text-slate-400 mb-1">Event</div>
+            <div class="font-medium">${event.title}</div>
+            <div class="text-sm text-slate-400 mt-1">${formatDate(event.startDate)}</div>
+          </div>
+
+          ${ticket.qrCode
+            ? `<div class="flex justify-center"><img src="${ticket.qrCode}" alt="QR Code" class="w-56 h-56 rounded-xl border-4 border-white" /></div>`
+            : `<div class="text-slate-400 text-sm py-8">QR code not available</div>`
+          }
+
+          <div class="bg-surface border border-surface-border rounded-xl p-4 text-left space-y-2 text-sm">
+            <div class="flex justify-between"><span class="text-slate-400">Ticket #</span><span class="font-mono text-xs">${ticket.ticketNumber}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Type</span><span>${ticket.ticketType?.name || '—'}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Status</span><span class="${ticket.status === 'ACTIVE' ? 'text-green-400' : ticket.status === 'USED' ? 'text-slate-400' : 'text-red-400'}">${ticket.status}</span></div>
+            ${ticket.checkedInAt ? `<div class="flex justify-between"><span class="text-slate-400">Checked in</span><span class="text-green-400">${formatDateTime(ticket.checkedInAt)}</span></div>` : ''}
+          </div>
+
+          ${ticket.qrCode
+            ? `<button onclick="downloadQR('${ticket.qrCode}', '${ticket.ticketNumber}')" class="btn-primary w-full text-sm">⬇ Download Ticket</button>`
+            : ''
+          }
+        </div>
+      `;
+      openModal('ticket-modal');
+    }
+
+    function downloadQR(dataUrl, ticketNumber) {
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `ticket-${ticketNumber}.png`;
+      a.click();
+      Toast.success('Ticket downloaded!');
+    }
+
+    async function cancelBooking(bookingId) {
+      if (!confirm('Are you sure you want to cancel this booking?')) return;
+      try {
+        await API.bookings.cancel(bookingId, 'User requested cancellation');
+        Toast.success('Booking cancelled');
+        await loadBookings();
+      } catch (err) {
+        Toast.error(err.message || 'Failed to cancel');
+      }
+    }
+
+    function openModal(id) { document.getElementById(id)?.classList.add('active'); }
+    function closeModal(id) { document.getElementById(id)?.classList.remove('active'); }
+
+    document.querySelectorAll('.modal-overlay').forEach(o => {
+      o.addEventListener('click', e => { if (e.target === o) o.classList.remove('active'); });
+    });
+  </script>
+</body>
+</html>

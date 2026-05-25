@@ -1,0 +1,9 @@
+{
+  "name": "eventsphere-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EventSphere static frontend",
+  "scripts": {
+    "build": "node scripts/write-env.js"
+  }
+}

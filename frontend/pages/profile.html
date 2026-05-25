@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Profile — EventSphere</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: {
+        fontFamily: { display: ['Syne','sans-serif'], body: ['DM Sans','sans-serif'] },
+        colors: { primary: { DEFAULT:'#6366f1', dark:'#4f46e5', light:'#818cf8' }, surface: { DEFAULT:'#0f0f1a', card:'#161625', border:'#1e1e35' } }
+      }}
+    };
+  </script>
+</head>
+<body class="bg-surface text-white font-body antialiased min-h-screen">
+
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-surface-card border-b border-surface-border">
+    <div class="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </div>
+        <span class="font-display font-bold text-lg">EventSphere</span>
+      </a>
+      <a href="/" class="btn-secondary text-sm">← Back</a>
+    </div>
+  </nav>
+
+  <main class="max-w-3xl mx-auto px-4 pt-24 pb-20 space-y-6">
+
+    <!-- Profile Header -->
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-8">
+      <div class="flex items-start gap-6">
+        <div id="avatar-display" class="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center font-display font-bold text-primary-light text-3xl flex-shrink-0">
+          ?
+        </div>
+        <div class="flex-1">
+          <h1 id="profile-name" class="font-display text-2xl font-bold">Loading...</h1>
+          <p id="profile-email" class="text-slate-400 text-sm mt-0.5">—</p>
+          <span id="profile-role" class="inline-block mt-2 text-xs px-2.5 py-1 bg-primary/10 text-primary-light border border-primary/20 rounded-full"></span>
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-surface-border">
+        <div class="text-center">
+          <div class="font-display text-2xl font-bold" id="stat-bookings">—</div>
+          <div class="text-xs text-slate-400 mt-0.5">Bookings</div>
+        </div>
+        <div class="text-center">
+          <div class="font-display text-2xl font-bold" id="stat-upcoming">—</div>
+          <div class="text-xs text-slate-400 mt-0.5">Upcoming</div>
+        </div>
+        <div class="text-center">
+          <div class="font-display text-2xl font-bold" id="stat-wishlist">—</div>
+          <div class="text-xs text-slate-400 mt-0.5">Wishlisted</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Profile -->
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+      <h2 class="font-display font-semibold text-lg">Edit Profile</h2>
+
+      <div>
+        <label class="form-label">Full Name</label>
+        <input id="edit-name" type="text" class="form-input" placeholder="Your name" />
+      </div>
+      <div>
+        <label class="form-label">Phone Number</label>
+        <input id="edit-phone" type="tel" class="form-input" placeholder="+91 XXXXXXXXXX" />
+      </div>
+      <div>
+        <label class="form-label">Bio</label>
+        <textarea id="edit-bio" class="form-input h-24 resize-none" placeholder="Tell us about yourself..."></textarea>
+      </div>
+      <div>
+        <label class="form-label">Avatar URL</label>
+        <input id="edit-avatar" type="url" class="form-input" placeholder="https://..." />
+      </div>
+
+      <button onclick="saveProfile()" class="btn-primary">Save Changes</button>
+    </div>
+
+    <!-- Change Password -->
+    <div class="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4">
+      <h2 class="font-display font-semibold text-lg">Change Password</h2>
+
+      <div>
+        <label class="form-label">Current Password</label>
+        <input id="current-pwd" type="password" class="form-input" placeholder="••••••••" />
+      </div>
+      <div>
+        <label class="form-label">New Password</label>
+        <input id="new-pwd" type="password" class="form-input" placeholder="Min. 8 characters" />
+      </div>
+      <div>
+        <label class="form-label">Confirm New Password</label>
+        <input id="confirm-pwd" type="password" class="form-input" placeholder="Repeat new password" />
+      </div>
+
+      <button onclick="changePassword()" class="btn-primary">Update Password</button>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="bg-surface-card border border-red-500/20 rounded-2xl p-6">
+      <h2 class="font-display font-semibold text-lg text-red-400 mb-3">Account</h2>
+      <button onclick="Auth.logout()" class="btn-secondary text-red-400 border-red-500/30 hover:bg-red-500/10 text-sm">
+        Sign Out from All Devices
+      </button>
+    </div>
+
+  </main>
+
+  <script src="../js/env.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!Auth.requireAuth()) return;
+      await loadProfile();
+    });
+
+    async function loadProfile() {
+      try {
+        const [profileRes, statsRes] = await Promise.all([
+          API.auth.getMe(),
+          API.get('/users/stats'),
+        ]);
+
+        const user = profileRes.data;
+        const stats = statsRes.data;
+
+        // Display
+        document.getElementById('profile-name').textContent = user.name;
+        document.getElementById('profile-email').textContent = user.email;
+        document.getElementById('profile-role').textContent = user.role;
+        document.getElementById('avatar-display').textContent = user.name.charAt(0).toUpperCase();
+
+        document.getElementById('stat-bookings').textContent = stats.totalBookings;
+        document.getElementById('stat-upcoming').textContent = stats.upcomingEvents;
+        document.getElementById('stat-wishlist').textContent = stats.wishlistCount;
+
+        // Pre-fill edit form
+        document.getElementById('edit-name').value = user.name || '';
+        document.getElementById('edit-phone').value = user.phone || '';
+        document.getElementById('edit-bio').value = user.bio || '';
+        document.getElementById('edit-avatar').value = user.avatar || '';
+      } catch (err) {
+        Toast.error('Failed to load profile');
+      }
+    }
+
+    async function saveProfile() {
+      const name = document.getElementById('edit-name').value.trim();
+      const phone = document.getElementById('edit-phone').value.trim();
+      const bio = document.getElementById('edit-bio').value.trim();
+      const avatar = document.getElementById('edit-avatar').value.trim();
+
+      if (!name) { Toast.error('Name is required'); return; }
+
+      try {
+        const res = await API.auth.updateProfile({ name, phone, bio, avatar });
+        // Update stored user
+        const stored = Auth.getUser();
+        Auth.saveSession({ ...stored, name: res.data.name, avatar: res.data.avatar }, Auth.getToken());
+        Toast.success('Profile updated!');
+        await loadProfile();
+      } catch (err) {
+        Toast.error(err.message || 'Failed to save profile');
+      }
+    }
+
+    async function changePassword() {
+      const currentPassword = document.getElementById('current-pwd').value;
+      const newPassword = document.getElementById('new-pwd').value;
+      const confirmPassword = document.getElementById('confirm-pwd').value;
+
+      if (!currentPassword || !newPassword) { Toast.error('Fill in all password fields'); return; }
+      if (newPassword.length < 8) { Toast.error('New password must be at least 8 characters'); return; }
+      if (newPassword !== confirmPassword) { Toast.error('Passwords do not match'); return; }
+
+      try {
+        await API.auth.changePassword({ currentPassword, newPassword });
+        Toast.success('Password changed successfully!');
+        document.getElementById('current-pwd').value = '';
+        document.getElementById('new-pwd').value = '';
+        document.getElementById('confirm-pwd').value = '';
+      } catch (err) {
+        Toast.error(err.message || 'Failed to change password');
+      }
+    }
+  </script>
+</body>
+</html>

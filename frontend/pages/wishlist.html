@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wishlist — EventSphere</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { fontFamily: { display: ['Syne', 'sans-serif'], body: ['DM Sans', 'sans-serif'] }, colors: { primary: { DEFAULT: '#6366f1', dark: '#4f46e5', light: '#818cf8' }, surface: { DEFAULT: '#0f0f1a', card: '#161625', border: '#1e1e35' } } } }
+    };
+  </script>
+</head>
+<body class="bg-surface text-white font-body antialiased min-h-screen">
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-surface-card border-b border-surface-border">
+    <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </div>
+        <span class="font-display font-bold text-lg">EventSphere</span>
+      </a>
+      <div id="nav-auth"></div>
+    </div>
+  </nav>
+
+  <main class="max-w-5xl mx-auto px-4 pt-24 pb-20">
+    <h1 class="font-display text-2xl font-bold mb-6">❤️ My Wishlist</h1>
+
+    <div id="wishlist-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div class="skeleton-card h-60 rounded-2xl"></div>
+      <div class="skeleton-card h-60 rounded-2xl"></div>
+    </div>
+
+    <div id="wishlist-empty" class="hidden text-center py-20">
+      <div class="text-5xl mb-4">🤍</div>
+      <h3 class="font-display text-xl font-semibold mb-2">No saved events</h3>
+      <p class="text-slate-400 mb-6">Events you wishlist will appear here</p>
+      <a href="/" class="btn-primary">Browse Events</a>
+    </div>
+  </main>
+
+  <script src="../js/env.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!Auth.requireAuth()) return;
+      try {
+        const res = await API.wishlist.list();
+        const items = res.data;
+        const grid = document.getElementById('wishlist-grid');
+        const empty = document.getElementById('wishlist-empty');
+
+        if (!items.length) { grid.innerHTML = ''; empty.classList.remove('hidden'); return; }
+
+        grid.innerHTML = items.map(({ event: e }) => {
+          const lowestPrice = e.ticketTypes.length > 0 ? Math.min(...e.ticketTypes.map(t => t.price)) : null;
+          const emoji = CATEGORY_EMOJI[e.category] || '📌';
+          return `
+          <div class="bg-surface-card border border-surface-border rounded-2xl overflow-hidden hover:border-primary/30 transition-all group">
+            ${e.bannerImage
+              ? `<img src="${e.bannerImage}" class="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-500" />`
+              : `<div class="w-full h-36 bg-surface-border flex items-center justify-center text-4xl">${emoji}</div>`
+            }
+            <div class="p-4 space-y-2">
+              <span class="card-badge badge-${e.category} text-xs">${emoji} ${e.category}</span>
+              <h3 class="font-display font-semibold line-clamp-2">${e.title}</h3>
+              <div class="text-xs text-slate-400">${formatDate(e.startDate)}</div>
+              <div class="flex items-center justify-between pt-2">
+                <span class="text-primary-light font-bold">${lowestPrice !== null ? formatINR(lowestPrice) : 'TBA'}</span>
+                <div class="flex gap-2">
+                  <a href="/pages/event-detail.html?id=${e.id}" class="btn-primary text-xs py-1.5 px-3">View</a>
+                  <button onclick="removeWishlist('${e.id}', this)" class="text-red-400 hover:text-red-300 text-sm">♥</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          `;
+        }).join('');
+      } catch (err) {
+        Toast.error('Failed to load wishlist');
+      }
+    });
+
+    async function removeWishlist(eventId, btn) {
+      try {
+        await API.wishlist.toggle(eventId);
+        btn.closest('.bg-surface-card').remove();
+        Toast.info('Removed from wishlist');
+        const remaining = document.querySelectorAll('#wishlist-grid .bg-surface-card').length;
+        if (!remaining) document.getElementById('wishlist-empty').classList.remove('hidden');
+      } catch (err) { Toast.error('Failed to update'); }
+    }
+  </script>
+</body>
+</html>

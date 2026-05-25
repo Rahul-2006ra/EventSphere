@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — EventSphere</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { fontFamily: { display: ['Syne', 'sans-serif'], body: ['DM Sans', 'sans-serif'] }, colors: { primary: { DEFAULT: '#6366f1', dark: '#4f46e5', light: '#818cf8' }, accent: { DEFAULT: '#f59e0b' }, surface: { DEFAULT: '#0f0f1a', card: '#161625', border: '#1e1e35' } } } }
+    };
+  </script>
+</head>
+<body class="bg-surface text-white font-body antialiased">
+
+  <div class="flex min-h-screen">
+    <!-- ── SIDEBAR ── -->
+    <aside class="w-64 bg-surface-card border-r border-surface-border fixed inset-y-0 left-0 z-40 flex flex-col hidden lg:flex">
+      <div class="p-5 border-b border-surface-border">
+        <a href="/" class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </div>
+          <span class="font-display font-bold text-lg">EventSphere</span>
+        </a>
+      </div>
+
+      <nav class="flex-1 p-4 space-y-1">
+        <a href="/pages/dashboard.html" class="sidebar-link active">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Overview
+        </a>
+        <a href="/pages/my-events.html" class="sidebar-link">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          My Events
+        </a>
+        <a href="/pages/create-event.html" class="sidebar-link">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Create Event
+        </a>
+        <a href="/pages/checkin.html" class="sidebar-link">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Check-In Scanner
+        </a>
+        <div class="pt-4 border-t border-surface-border mt-4">
+          <a href="/" class="sidebar-link">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            Browse Events
+          </a>
+          <button onclick="Auth.logout()" class="sidebar-link w-full text-left text-red-400 hover:text-red-300">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            Sign Out
+          </button>
+        </div>
+      </nav>
+
+      <!-- User info -->
+      <div class="p-4 border-t border-surface-border">
+        <div class="flex items-center gap-3">
+          <div id="sidebar-avatar" class="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary-light">?</div>
+          <div class="min-w-0">
+            <div id="sidebar-name" class="text-sm font-medium truncate">Loading...</div>
+            <div class="text-xs text-slate-500">Organizer</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── MAIN CONTENT ── -->
+    <div class="flex-1 lg:ml-64">
+      <!-- Top bar -->
+      <header class="bg-surface-card border-b border-surface-border px-6 py-4 flex items-center justify-between sticky top-0 z-30">
+        <div>
+          <h1 class="font-display text-xl font-bold">Dashboard</h1>
+          <p class="text-xs text-slate-400 mt-0.5">Real-time overview of your events</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="live-dot">Live</span>
+          <a href="/pages/create-event.html" class="btn-primary text-sm">+ New Event</a>
+        </div>
+      </header>
+
+      <main class="p-6 space-y-6">
+
+        <!-- Stat Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="stat-card">
+            <div class="text-2xl mb-2">💰</div>
+            <div class="stat-number" id="stat-revenue">₹0</div>
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-change up">↑ This month</div>
+          </div>
+          <div class="stat-card">
+            <div class="text-2xl mb-2">🎟</div>
+            <div class="stat-number" id="stat-tickets">0</div>
+            <div class="stat-label">Tickets Sold</div>
+          </div>
+          <div class="stat-card">
+            <div class="text-2xl mb-2">📋</div>
+            <div class="stat-number" id="stat-bookings">0</div>
+            <div class="stat-label">Total Bookings</div>
+          </div>
+          <div class="stat-card">
+            <div class="text-2xl mb-2">✅</div>
+            <div class="stat-number" id="stat-checkins">0</div>
+            <div class="stat-label">Check-Ins</div>
+          </div>
+        </div>
+
+        <!-- Secondary stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="stat-card flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl flex-shrink-0">🎪</div>
+            <div>
+              <div class="stat-number text-2xl" id="stat-total-events">0</div>
+              <div class="stat-label">Total Events</div>
+            </div>
+          </div>
+          <div class="stat-card flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center text-2xl flex-shrink-0">📅</div>
+            <div>
+              <div class="stat-number text-2xl" id="stat-upcoming">0</div>
+              <div class="stat-label">Upcoming Events</div>
+            </div>
+          </div>
+          <div class="stat-card flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-2xl flex-shrink-0">⭐</div>
+            <div>
+              <div class="stat-number text-2xl" id="stat-avg-rating">—</div>
+              <div class="stat-label">Avg. Rating</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Revenue Chart -->
+          <div class="bg-surface-card border border-surface-border rounded-2xl p-5">
+            <h3 class="font-display font-semibold mb-4">Monthly Revenue</h3>
+            <canvas id="revenue-chart" height="200"></canvas>
+          </div>
+
+          <!-- Event Performance -->
+          <div class="bg-surface-card border border-surface-border rounded-2xl p-5">
+            <h3 class="font-display font-semibold mb-4">Event Performance</h3>
+            <canvas id="performance-chart" height="200"></canvas>
+          </div>
+        </div>
+
+        <!-- Bottom row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Recent Bookings -->
+          <div class="bg-surface-card border border-surface-border rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-display font-semibold">Recent Bookings</h3>
+              <span id="live-checkin-badge" class="live-dot text-xs">Live</span>
+            </div>
+            <div id="recent-bookings" class="space-y-3">
+              <div class="skeleton-card h-14 rounded-xl"></div>
+              <div class="skeleton-card h-14 rounded-xl"></div>
+              <div class="skeleton-card h-14 rounded-xl"></div>
+            </div>
+          </div>
+
+          <!-- Event Performance Table -->
+          <div class="bg-surface-card border border-surface-border rounded-2xl p-5">
+            <h3 class="font-display font-semibold mb-4">Top Events</h3>
+            <div id="event-table" class="space-y-3">
+              <div class="skeleton-card h-14 rounded-xl"></div>
+              <div class="skeleton-card h-14 rounded-xl"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Check-in Feed -->
+        <div class="bg-surface-card border border-surface-border rounded-2xl p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-display font-semibold">Live Check-in Feed</h3>
+            <span class="live-dot">Real-time</span>
+          </div>
+          <div id="checkin-feed" class="space-y-2 max-h-48 overflow-y-auto">
+            <p class="text-slate-400 text-sm">Waiting for check-ins...</p>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script src="../js/env.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    let revenueChart = null;
+    let performanceChart = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!Auth.requireOrganizer()) return;
+
+      const user = Auth.getUser();
+      document.getElementById('sidebar-name').textContent = user.name;
+      document.getElementById('sidebar-avatar').textContent = user.name.charAt(0).toUpperCase();
+
+      await loadDashboard();
+      initDashboardSocket(user.id);
+    });
+
+    async function loadDashboard() {
+      try {
+        const res = await API.dashboard.overview();
+        const data = res.data;
+
+        // Stats
+        document.getElementById('stat-revenue').textContent = formatINR(data.totalRevenue);
+        document.getElementById('stat-tickets').textContent = data.totalTicketsSold.toLocaleString();
+        document.getElementById('stat-bookings').textContent = data.totalBookings.toLocaleString();
+        document.getElementById('stat-checkins').textContent = data.totalCheckIns.toLocaleString();
+        document.getElementById('stat-total-events').textContent = data.totalEvents;
+        document.getElementById('stat-upcoming').textContent = data.upcomingEvents;
+
+        // Recent bookings
+        renderRecentBookings(data.recentBookings);
+
+        // Event table
+        renderEventTable(data.eventPerformance);
+
+        // Charts
+        renderRevenueChart(data.monthlyRevenue);
+        renderPerformanceChart(data.eventPerformance);
+
+      } catch (err) {
+        Toast.error('Failed to load dashboard data');
+        console.error(err);
+      }
+    }
+
+    function renderRecentBookings(bookings) {
+      const el = document.getElementById('recent-bookings');
+      if (!bookings.length) {
+        el.innerHTML = '<p class="text-slate-400 text-sm">No bookings yet</p>';
+        return;
+      }
+      el.innerHTML = bookings.map(b => `
+        <div class="flex items-center gap-3 p-3 bg-surface border border-surface-border rounded-xl">
+          <div class="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary-light text-sm flex-shrink-0">
+            ${b.user.name.charAt(0)}
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="text-sm font-medium truncate">${b.user.name}</div>
+            <div class="text-xs text-slate-400 truncate">${b.event.title}</div>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <div class="text-sm font-medium text-primary-light">${formatINR(b.totalAmount)}</div>
+            <div class="text-xs text-slate-500">${timeAgo(b.createdAt)}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderEventTable(events) {
+      const el = document.getElementById('event-table');
+      if (!events.length) {
+        el.innerHTML = '<p class="text-slate-400 text-sm">No events yet</p>';
+        return;
+      }
+      el.innerHTML = events.map(e => {
+        const fillPct = e.totalCapacity > 0 ? Math.round((e.bookedCount / e.totalCapacity) * 100) : 0;
+        return `
+        <div class="p-3 bg-surface border border-surface-border rounded-xl">
+          <div class="flex justify-between items-start mb-2">
+            <div class="font-medium text-sm truncate flex-1 mr-2">${e.title}</div>
+            <div class="text-sm font-bold text-primary-light flex-shrink-0">${formatINR(e.revenue)}</div>
+          </div>
+          <div class="flex justify-between text-xs text-slate-500 mb-1.5">
+            <span>${e.bookedCount}/${e.totalCapacity} tickets</span>
+            <span>${fillPct}% sold</span>
+          </div>
+          <div class="h-1.5 bg-surface-border rounded-full">
+            <div class="h-full rounded-full ${fillPct > 80 ? 'bg-red-500' : fillPct > 50 ? 'bg-amber-500' : 'bg-primary'}" style="width:${fillPct}%"></div>
+          </div>
+        </div>
+        `;
+      }).join('');
+    }
+
+    function renderRevenueChart(monthlyData) {
+      const ctx = document.getElementById('revenue-chart').getContext('2d');
+      if (revenueChart) revenueChart.destroy();
+
+      revenueChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: monthlyData.map(d => d.month),
+          datasets: [{
+            label: 'Revenue (₹)',
+            data: monthlyData.map(d => d.revenue),
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99,102,241,0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#6366f1',
+            pointRadius: 4,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: '#1e1e35' }, ticks: { color: '#64748b' } },
+            y: { grid: { color: '#1e1e35' }, ticks: { color: '#64748b', callback: v => `₹${v.toLocaleString()}` } }
+          }
+        }
+      });
+    }
+
+    function renderPerformanceChart(events) {
+      const ctx = document.getElementById('performance-chart').getContext('2d');
+      if (performanceChart) performanceChart.destroy();
+
+      performanceChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: events.map(e => e.title.length > 15 ? e.title.slice(0, 15) + '…' : e.title),
+          datasets: [{
+            label: 'Tickets Sold',
+            data: events.map(e => e.bookedCount),
+            backgroundColor: 'rgba(99,102,241,0.7)',
+            borderRadius: 6,
+          }, {
+            label: 'Capacity',
+            data: events.map(e => e.totalCapacity),
+            backgroundColor: 'rgba(30,30,53,0.8)',
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#64748b' } },
+            y: { grid: { color: '#1e1e35' }, ticks: { color: '#64748b' } }
+          }
+        }
+      });
+    }
+
+    // ── Socket.IO real-time dashboard ──
+    function initDashboardSocket(organizerId) {
+      const socket = io(CONFIG.SOCKET_URL);
+      socket.on('connect', () => {
+        socket.emit('join:dashboard', organizerId);
+      });
+
+      socket.on('dashboard:update', async (data) => {
+        // Refresh dashboard on new booking
+        if (data.type === 'new_booking') {
+          await loadDashboard();
+          Toast.info(`New booking! ${formatINR(data.amount)} received`);
+        }
+      });
+
+      socket.on('dashboard:checkin', (data) => {
+        addCheckinFeedItem(data);
+        // Update check-in count
+        const el = document.getElementById('stat-checkins');
+        if (el) el.textContent = (parseInt(el.textContent.replace(/,/g, '')) + 1).toLocaleString();
+      });
+    }
+
+    function addCheckinFeedItem(data) {
+      const feed = document.getElementById('checkin-feed');
+      const placeholder = feed.querySelector('p');
+      if (placeholder) placeholder.remove();
+
+      const item = document.createElement('div');
+      item.className = 'flex items-center gap-2 p-2.5 bg-green-500/5 border border-green-500/20 rounded-lg text-sm animate-fade-up';
+      item.innerHTML = `
+        <span class="text-green-400">✓</span>
+        <span class="font-medium">${data.attendeeName}</span>
+        <span class="text-slate-400">checked in to</span>
+        <span class="text-slate-300 truncate">${data.ticketType}</span>
+        <span class="text-slate-500 ml-auto text-xs whitespace-nowrap">${timeAgo(data.checkedInAt)}</span>
+      `;
+      feed.prepend(item);
+
+      // Keep max 20 items
+      const items = feed.querySelectorAll('div');
+      if (items.length > 20) items[items.length - 1].remove();
+    }
+  </script>
+</body>
+</html>
