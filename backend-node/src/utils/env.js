@@ -14,6 +14,21 @@ const ensureMongoDatabaseName = (value) => {
   return `${beforeQuery.replace(/\/$/, '')}/${DEFAULT_DB_NAME}${query}`;
 };
 
+const ensureMongoTimeouts = (value) => {
+  try {
+    const parsed = new URL(value);
+    if (!parsed.searchParams.has('serverSelectionTimeoutMS')) {
+      parsed.searchParams.set('serverSelectionTimeoutMS', '8000');
+    }
+    if (!parsed.searchParams.has('connectTimeoutMS')) {
+      parsed.searchParams.set('connectTimeoutMS', '8000');
+    }
+    return parsed.toString();
+  } catch {
+    return value;
+  }
+};
+
 const normalizeMongoDatabaseUrl = (rawValue) => {
   if (!rawValue || !rawValue.startsWith('mongodb')) return rawValue;
 
@@ -24,7 +39,7 @@ const normalizeMongoDatabaseUrl = (rawValue) => {
     if (!parsed.pathname || parsed.pathname === '/') {
       parsed.pathname = `/${DEFAULT_DB_NAME}`;
     }
-    return parsed.toString();
+    return ensureMongoTimeouts(parsed.toString());
   } catch {
     const protocolMatch = value.match(/^(mongodb(?:\+srv)?:\/\/)/);
     if (!protocolMatch) return value;
@@ -36,17 +51,17 @@ const normalizeMongoDatabaseUrl = (rawValue) => {
     const query = queryIndex === -1 ? '' : rest.slice(queryIndex);
     const atIndex = authAndHost.lastIndexOf('@');
 
-    if (atIndex === -1) return ensureMongoDatabaseName(value);
+    if (atIndex === -1) return ensureMongoTimeouts(ensureMongoDatabaseName(value));
 
     const auth = authAndHost.slice(0, atIndex);
     const hostAndPath = authAndHost.slice(atIndex + 1);
     const colonIndex = auth.indexOf(':');
 
-    if (colonIndex === -1) return ensureMongoDatabaseName(value);
+    if (colonIndex === -1) return ensureMongoTimeouts(ensureMongoDatabaseName(value));
 
     const username = encodeURIComponent(decodeURIComponent(auth.slice(0, colonIndex)));
     const password = encodeURIComponent(decodeURIComponent(auth.slice(colonIndex + 1)));
-    return ensureMongoDatabaseName(`${protocol}${username}:${password}@${hostAndPath}${query}`);
+    return ensureMongoTimeouts(ensureMongoDatabaseName(`${protocol}${username}:${password}@${hostAndPath}${query}`));
   }
 };
 
