@@ -104,7 +104,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
-app.get('/health/db', async (req, res) => {
+app.get(`${API}/health`, (req, res) => {
+  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
+const dbHealthHandler = async (req, res) => {
   if (isDemoMode) {
     return res.json({ status: 'healthy', database: 'demo-memory', timestamp: new Date().toISOString() });
   }
@@ -117,7 +121,10 @@ app.get('/health/db', async (req, res) => {
     console.error('[Health DB]', err.message);
     return res.status(503).json({ status: 'unhealthy', database: 'mongodb', message: 'Database connection failed' });
   }
-});
+};
+
+app.get('/health/db', dbHealthHandler);
+app.get(`${API}/health/db`, dbHealthHandler);
 
 if (isDemoMode) {
   console.warn('[EventSphere] DEMO_MODE enabled: using in-memory data instead of MongoDB.');

@@ -2,6 +2,27 @@ const DEFAULT_DB_NAME = 'eventsphere';
 
 const stripMarkdownMailto = (value) => value.replace(/\[([^\]]+)\]\(mailto:[^)]+\)/g, '$1');
 
+const stripPlaceholderPasswordBrackets = (value) => {
+  const protocolMatch = value.match(/^(mongodb(?:\+srv)?:\/\/)/);
+  if (!protocolMatch) return value;
+
+  const protocol = protocolMatch[1];
+  const rest = value.slice(protocol.length);
+  const atIndex = rest.lastIndexOf('@');
+  if (atIndex === -1) return value;
+
+  const auth = rest.slice(0, atIndex);
+  const hostAndPath = rest.slice(atIndex + 1);
+  const colonIndex = auth.indexOf(':');
+  if (colonIndex === -1) return value;
+
+  const username = auth.slice(0, colonIndex);
+  const password = auth.slice(colonIndex + 1);
+  if (!password.startsWith('<') || !password.endsWith('>')) return value;
+
+  return `${protocol}${username}:${password.slice(1, -1)}@${hostAndPath}`;
+};
+
 const ensureMongoDatabaseName = (value) => {
   const queryIndex = value.indexOf('?');
   const beforeQuery = queryIndex === -1 ? value : value.slice(0, queryIndex);
@@ -32,7 +53,7 @@ const ensureMongoTimeouts = (value) => {
 const normalizeMongoDatabaseUrl = (rawValue) => {
   if (!rawValue || !rawValue.startsWith('mongodb')) return rawValue;
 
-  let value = stripMarkdownMailto(rawValue.trim());
+  let value = stripPlaceholderPasswordBrackets(stripMarkdownMailto(rawValue.trim()));
 
   try {
     const parsed = new URL(value);

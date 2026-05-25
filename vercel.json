@@ -3,6 +3,16 @@
   "installCommand": "cd frontend && npm install",
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://eventsphere-backend-wx8r.onrender.com/api/:path*"
+    },
+    {
+      "source": "/socket.io/:path*",
+      "destination": "https://eventsphere-backend-wx8r.onrender.com/socket.io/:path*"
+    }
+  ],
   "cleanUrls": true,
   "trailingSlash": false
 }
