@@ -232,9 +232,13 @@
         // Event table
         renderEventTable(data.eventPerformance);
 
-        // Charts
-        renderRevenueChart(data.monthlyRevenue);
-        renderPerformanceChart(data.eventPerformance);
+        // Charts should never block the dashboard cards/tables from rendering.
+        try {
+          renderRevenueChart(data.monthlyRevenue || []);
+          renderPerformanceChart(data.eventPerformance || []);
+        } catch (chartErr) {
+          console.warn('[Dashboard] Chart rendering skipped:', chartErr);
+        }
 
       } catch (err) {
         Toast.error('Failed to load dashboard data');
@@ -244,6 +248,7 @@
 
     function renderRecentBookings(bookings) {
       const el = document.getElementById('recent-bookings');
+      bookings = bookings || [];
       if (!bookings.length) {
         el.innerHTML = '<p class="text-slate-400 text-sm">No bookings yet</p>';
         return;
@@ -251,11 +256,11 @@
       el.innerHTML = bookings.map(b => `
         <div class="flex items-center gap-3 p-3 bg-surface border border-surface-border rounded-xl">
           <div class="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary-light text-sm flex-shrink-0">
-            ${b.user.name.charAt(0)}
+            ${(b.user?.name || 'A').charAt(0)}
           </div>
           <div class="min-w-0 flex-1">
-            <div class="text-sm font-medium truncate">${b.user.name}</div>
-            <div class="text-xs text-slate-400 truncate">${b.event.title}</div>
+            <div class="text-sm font-medium truncate">${b.user?.name || 'Attendee'}</div>
+            <div class="text-xs text-slate-400 truncate">${b.event?.title || 'Event'}</div>
           </div>
           <div class="text-right flex-shrink-0">
             <div class="text-sm font-medium text-primary-light">${formatINR(b.totalAmount)}</div>
@@ -267,6 +272,7 @@
 
     function renderEventTable(events) {
       const el = document.getElementById('event-table');
+      events = events || [];
       if (!events.length) {
         el.innerHTML = '<p class="text-slate-400 text-sm">No events yet</p>';
         return;
@@ -292,7 +298,11 @@
     }
 
     function renderRevenueChart(monthlyData) {
-      const ctx = document.getElementById('revenue-chart').getContext('2d');
+      if (typeof Chart === 'undefined') throw new Error('Chart.js did not load');
+      monthlyData = monthlyData || [];
+      const canvas = document.getElementById('revenue-chart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
       if (revenueChart) revenueChart.destroy();
 
       revenueChart = new Chart(ctx, {
@@ -323,7 +333,11 @@
     }
 
     function renderPerformanceChart(events) {
-      const ctx = document.getElementById('performance-chart').getContext('2d');
+      if (typeof Chart === 'undefined') throw new Error('Chart.js did not load');
+      events = events || [];
+      const canvas = document.getElementById('performance-chart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
       if (performanceChart) performanceChart.destroy();
 
       performanceChart = new Chart(ctx, {
@@ -355,6 +369,10 @@
 
     // ── Socket.IO real-time dashboard ──
     function initDashboardSocket(organizerId) {
+      if (typeof io === 'undefined') {
+        console.warn('[Dashboard] Socket.IO client did not load');
+        return;
+      }
       const socket = io(CONFIG.SOCKET_URL);
       socket.on('connect', () => {
         socket.emit('join:dashboard', organizerId);
