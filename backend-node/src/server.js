@@ -166,6 +166,20 @@ app.use(express.static(frontendPath));
 app.use((err, req, res, next) => {
   console.error('[ERROR]', err);
 
+  const isPrismaConnectionError = err.message && (
+    err.message.includes('Server selection timeout')
+    || err.message.includes('SCRAM failure')
+    || err.message.includes('authentication failed')
+    || err.message.includes('Raw query failed')
+  );
+
+  if (isPrismaConnectionError) {
+    return res.status(503).json({
+      success: false,
+      message: 'Database connection failed',
+    });
+  }
+
   if (err.name === 'ValidationError') {
     return res.status(400).json({ success: false, message: err.message });
   }
