@@ -53,7 +53,7 @@ function seed() {
   if (state.users.length) return;
   const password = bcrypt.hashSync('demo1234', 12);
   const attendee = { id: 'user_attendee_demo', name: 'Alex Johnson', email: 'attendee@demo.com', password, role: 'ATTENDEE', bio: 'Tech enthusiast and event lover', createdAt: now() };
-  const organizer = { id: 'user_organizer_demo', name: 'Priya Sharma', email: 'organizer@demo.com', password, role: 'ORGANIZER', bio: 'Event organizer with 5+ years experience', createdAt: now() };
+  const organizer = { id: 'user_organizer_demo', name: 'Rahul', email: 'organizer@demo.com', password, role: 'ORGANIZER', bio: 'Creator of EventSphere and event organizer.', createdAt: now() };
   state.users.push(attendee, organizer);
 
   const future = (days, hours = 0) => new Date(Date.now() + (days * 24 + hours) * 60 * 60 * 1000).toISOString();

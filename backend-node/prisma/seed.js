@@ -29,13 +29,16 @@ async function main() {
 
   const organizer = await prisma.user.upsert({
     where: { email: 'organizer@demo.com' },
-    update: {},
+    update: {
+      name: 'Rahul',
+      bio: 'Creator of EventSphere and event organizer.',
+    },
     create: {
-      name: 'Priya Sharma',
+      name: 'Rahul',
       email: 'organizer@demo.com',
       password: hashedPassword,
       role: 'ORGANIZER',
-      bio: 'Event organizer with 5+ years experience',
+      bio: 'Creator of EventSphere and event organizer.',
     },
   });
 
